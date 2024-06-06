@@ -1,11 +1,22 @@
 use std::{
 	cmp::{Eq, Ordering},
+	collections::HashMap,
 	fmt::Display,
 	hash::Hash,
+	num::NonZeroU64,
 	ops::{Add, Div, Mul, Rem, Sub},
+	sync::Mutex,
 };
 
-use crate::error::ArithmeticError;
+use bilge::arbitrary_int::{u10, u52, Number};
+use once_cell::sync::Lazy;
+use varlen::array_init::FromIterPrefix;
+
+use crate::{
+	error::ArithmeticError,
+	value::{value_storage, DataView, InitEmpty, ValType},
+	Value,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum IntVal {
@@ -304,9 +315,304 @@ impl FloatVal {
 	}
 }
 
+impl Value {
+	fn new_boxed_int(i: IntVal) -> Value {
+		let (b, i) = match i {
+			IntVal::InfPos => (true, 1),
+			IntVal::InfNeg => (true, -1),
+			IntVal::Int(i) => (false, i),
+		};
+		let init = value_storage::Init {
+			ty: ValType::Int,
+			len: 0,
+			ref_count: 1.into(),
+			weak_count: 0.into(),
+			values: InitEmpty,
+			ints: FromIterPrefix([i].into_iter()),
+			floats: InitEmpty,
+			bool_var: InitEmpty,
+			int_var: InitEmpty,
+			float_var: InitEmpty,
+			int_set_var: InitEmpty,
+			bytes: FromIterPrefix([b as u8].into_iter()),
+		};
+		Self::new_box(init)
+	}
+
+	fn new_boxed_float(i: FloatVal) -> Value {
+		Self::new_box(value_storage::Init {
+			ty: ValType::Float,
+			len: 0,
+			ref_count: 1.into(),
+			weak_count: 0.into(),
+			values: InitEmpty,
+			ints: InitEmpty,
+			floats: FromIterPrefix([i].into_iter()),
+			bool_var: InitEmpty,
+			int_var: InitEmpty,
+			float_var: InitEmpty,
+			int_set_var: InitEmpty,
+			bytes: InitEmpty,
+		})
+	}
+
+	fn as_int(&self) -> IntVal {
+		let DataView::Int(i) = self.deref() else {
+			panic!("expected int, found {self:?}");
+		};
+		i
+	}
+}
+
+static INT_MAP: Lazy<Mutex<HashMap<IntVal, Value>>> = Lazy::new(|| HashMap::new().into());
+pub static INT_INF_POS: Lazy<Value> = Lazy::new(|| {
+	let mut map = INT_MAP.lock().unwrap();
+	let inf = map
+		.entry(IntVal::InfPos)
+		.or_insert_with(|| Value::new_boxed_int(IntVal::InfPos));
+	inf.clone()
+});
+pub static INT_INF_NEG: Lazy<Value> = Lazy::new(|| {
+	let mut map = INT_MAP.lock().unwrap();
+	let inf = map
+		.entry(IntVal::InfNeg)
+		.or_insert_with(|| Value::new_boxed_int(IntVal::InfNeg));
+	inf.clone()
+});
+
+static FLOAT_MAP: Lazy<Mutex<HashMap<FloatVal, Value>>> = Lazy::new(|| HashMap::new().into());
+#[allow(dead_code)] // TODO!
+pub static FLOAT_INF_POS: Lazy<Value> = Lazy::new(|| FloatVal::INFINITY.into());
+#[allow(dead_code)] // TODO!
+pub static FLOAT_INF_NEG: Lazy<Value> = Lazy::new(|| FloatVal::NEG_INFINITY.into());
+
+impl From<bool> for Value {
+	fn from(value: bool) -> Self {
+		Value::from(if value { 1 } else { 0 })
+	}
+}
+impl TryInto<bool> for &Value {
+	type Error = ();
+
+	fn try_into(self) -> Result<bool, Self::Error> {
+		let val: i64 = self.try_into()?;
+		if val != 0 && val != 1 {
+			todo!()
+		}
+		Ok(val == 1)
+	}
+}
+impl TryInto<bool> for Value {
+	type Error = ();
+	fn try_into(self) -> Result<bool, Self::Error> {
+		(&self).try_into()
+	}
+}
+
+impl From<IntVal> for Value {
+	fn from(value: IntVal) -> Self {
+		match value {
+			IntVal::InfPos => INT_INF_POS.clone(),
+			IntVal::InfNeg => INT_INF_NEG.clone(),
+			IntVal::Int(i) if (Self::MIN_INT..=Self::MAX_INT).contains(&i) => {
+				// Can box integer (fits in 62 bits)
+				let mut x = i.unsigned_abs() << 3;
+				if i.is_negative() {
+					x |= Self::INT_SIGN_BIT;
+				}
+				x |= Self::INT_TAG;
+				Self {
+					raw: NonZeroU64::new(x).unwrap(),
+				}
+			}
+			iv => {
+				// Try and find integer in map or allocate new integer
+				let mut map = INT_MAP.lock().unwrap();
+				let v = map.entry(iv).or_insert_with(|| Value::new_boxed_int(iv));
+				v.clone()
+			}
+		}
+	}
+}
+impl TryInto<IntVal> for &Value {
+	type Error = ();
+	fn try_into(self) -> Result<IntVal, Self::Error> {
+		if let DataView::Int(i) = self.deref() {
+			Ok(i)
+		} else {
+			todo!()
+		}
+	}
+}
+impl TryInto<IntVal> for Value {
+	type Error = ();
+	fn try_into(self) -> Result<IntVal, Self::Error> {
+		(&self).try_into()
+	}
+}
+impl TryInto<i64> for &Value {
+	type Error = ();
+	fn try_into(self) -> Result<i64, Self::Error> {
+		if let IntVal::Int(i) = self.try_into()? {
+			Ok(i)
+		} else {
+			Err(())
+		}
+	}
+}
+impl TryInto<i64> for Value {
+	type Error = ();
+	fn try_into(self) -> Result<i64, Self::Error> {
+		(&self).try_into()
+	}
+}
+impl From<i64> for Value {
+	fn from(value: i64) -> Self {
+		IntVal::Int(value).into()
+	}
+}
+
+impl From<FloatVal> for Value {
+	fn from(value: FloatVal) -> Self {
+		let f: f64 = value.into();
+		const EXPONENT_MASK: u64 = 0x7FF << 52;
+		let bits = f.to_bits();
+		let mut exponent = (bits & EXPONENT_MASK) >> 52;
+		if exponent != 0 {
+			if !(513..=1534).contains(&exponent) {
+				// Exponent doesn't fit in 10 bits
+				let mut map = FLOAT_MAP.lock().unwrap();
+				let v = map
+					.entry(value)
+					.or_insert_with(|| Value::new_boxed_float(value));
+				return v.clone();
+			}
+			exponent -= 512; // Make exponent fit in 10 bits, with bias 511
+		}
+		debug_assert!(exponent <= <u10 as Number>::MAX.value().into());
+		let sign = (bits & (1 << 63)) != 0;
+
+		const FRACTION_MASK: u64 = 0xFFFFFFFFFFFFF;
+		let fraction = bits & FRACTION_MASK; // Remove one bit of precision
+		debug_assert!(fraction <= <u52 as Number>::MAX.value());
+		let mut raw = (fraction << 1) | (exponent << 53) | Self::FLOAT_TAG;
+		if sign {
+			raw |= Self::FLOAT_SIGN_BIT;
+		}
+		Value {
+			raw: NonZeroU64::new(raw).unwrap(),
+		}
+	}
+}
+impl From<f64> for Value {
+	fn from(value: f64) -> Self {
+		Value::from(FloatVal::from(value))
+	}
+}
+impl TryInto<FloatVal> for &Value {
+	type Error = ();
+	fn try_into(self) -> Result<FloatVal, Self::Error> {
+		if let DataView::Float(f) = self.deref() {
+			Ok(f)
+		} else {
+			todo!()
+		}
+	}
+}
+impl TryInto<FloatVal> for Value {
+	type Error = ();
+	fn try_into(self) -> Result<FloatVal, Self::Error> {
+		(&self).try_into()
+	}
+}
+impl TryInto<f64> for &Value {
+	type Error = ();
+
+	fn try_into(self) -> Result<f64, Self::Error> {
+		let fv: FloatVal = self.try_into()?;
+		Ok(fv.into())
+	}
+}
+impl TryInto<f64> for Value {
+	type Error = ();
+	fn try_into(self) -> Result<f64, Self::Error> {
+		(&self).try_into()
+	}
+}
+
 #[cfg(test)]
 mod tests {
-	use super::{FloatVal, IntVal};
+	use crate::{
+		value::{
+			num::{FloatVal, IntVal, FLOAT_INF_NEG, FLOAT_INF_POS},
+			RefType,
+		},
+		Value,
+	};
+
+	#[test]
+	fn test_bool_value() {
+		let f: bool = Value::from(false).try_into().unwrap();
+		assert_eq!(f, false);
+		let t: bool = Value::from(true).try_into().unwrap();
+		assert_eq!(t, true);
+	}
+
+	#[test]
+	fn test_integer_value() {
+		let zero: i64 = Value::from(0i64).try_into().unwrap();
+		assert_eq!(zero, 0i64);
+
+		let one: i64 = Value::from(1i64).try_into().unwrap();
+		assert_eq!(one, 1i64);
+		let minus_one: i64 = Value::from(-1i64).try_into().unwrap();
+		assert_eq!(minus_one, -1i64);
+
+		// Unboxed min and max
+		let minimum: i64 = Value::from(Value::MIN_INT).try_into().unwrap();
+		assert_eq!(minimum, Value::MIN_INT);
+		let maximum: i64 = Value::from(Value::MAX_INT).try_into().unwrap();
+		assert_eq!(maximum, Value::MAX_INT);
+
+		// Positive and Negative Infinity
+		let pos_inf: IntVal = Value::from(IntVal::InfPos).try_into().unwrap();
+		assert_eq!(pos_inf, IntVal::InfPos);
+		let neg_inf: IntVal = Value::from(IntVal::InfNeg).try_into().unwrap();
+		assert_eq!(neg_inf, IntVal::InfNeg);
+
+		// i64 min and max
+		let minimum: i64 = Value::from(i64::MAX).try_into().unwrap();
+		assert_eq!(minimum, i64::MAX);
+		let maximum: i64 = Value::from(i64::MIN).try_into().unwrap();
+		assert_eq!(maximum, i64::MIN);
+	}
+
+	#[test]
+	fn test_float_value() {
+		let zero: f64 = Value::from(0.0f64).try_into().unwrap();
+		assert_eq!(zero, 0.0);
+		let one: f64 = Value::from(1.0f64).try_into().unwrap();
+		assert_eq!(one, 1.0);
+		let minus_one: f64 = Value::from(-1.0f64).try_into().unwrap();
+		assert_eq!(minus_one, -1.0);
+
+		let twodottwo: f64 = Value::from(2.2f64).try_into().unwrap();
+		assert_eq!(twodottwo, 2.2);
+
+		// Positive and Negative Infinity
+		let pos_inf: f64 = Value::from(f64::INFINITY).try_into().unwrap();
+		assert_eq!(pos_inf, f64::INFINITY);
+		let neg_inf: f64 = Value::from(f64::NEG_INFINITY).try_into().unwrap();
+		assert_eq!(neg_inf, f64::NEG_INFINITY);
+		// f64 min and max
+		let minimum: f64 = Value::from(f64::MAX).try_into().unwrap();
+		assert_eq!(minimum, f64::MAX);
+		let maximum: f64 = Value::from(f64::MIN).try_into().unwrap();
+		assert_eq!(maximum, f64::MIN);
+
+		assert_eq!(FLOAT_INF_NEG.ref_ty(), RefType::Boxed);
+		assert_eq!(FLOAT_INF_POS.ref_ty(), RefType::Boxed);
+	}
 
 	#[test]
 	fn test_int_operations() {
