@@ -14,11 +14,8 @@ use std::{
 	ptr::NonNull,
 	str::{from_utf8, from_utf8_unchecked},
 	sync::{
-		atomic::{
-			self, AtomicU16, AtomicU8,
-			Ordering::{Acquire, Relaxed, Release},
-		},
-		Mutex,
+		atomic,
+		atomic::Ordering::{Acquire, Relaxed, Release},
 	},
 };
 
@@ -233,15 +230,13 @@ impl Value {
 							},
 						})
 					}
-					ValType::BoolVar => {
-						DataView::BoolVar(v.refs().bool_var[0].lock().unwrap().into())
-					}
-					ValType::IntVar => DataView::IntVar(v.refs().int_var[0].lock().unwrap().into()),
+					ValType::BoolVar => DataView::BoolVar(BoolVarRef::lock(&v.refs().bool_var[0])),
+					ValType::IntVar => DataView::IntVar(IntVarRef::lock(&v.refs().int_var[0])),
 					ValType::FloatVar => {
-						DataView::FloatVar(v.refs().float_var[0].lock().unwrap().into())
+						DataView::FloatVar(FloatVarRef::lock(&v.refs().float_var[0]))
 					}
 					ValType::IntSetVar => {
-						DataView::IntSetVar(v.refs().int_set_var[0].lock().unwrap().into())
+						DataView::IntSetVar(IntSetVarRef::lock(&v.refs().int_set_var[0]))
 					}
 				}
 			},
@@ -358,7 +353,27 @@ macro_rules! define_var_ref {
 	($v:ident, $r:ident) => {
 		#[derive(Debug)]
 		pub struct $r<'a> {
+			#[cfg(feature = "single-threaded")]
+			guard: std::cell::RefMut<'a, $v>,
+
+			#[cfg(not(feature = "single-threaded"))]
 			guard: std::sync::MutexGuard<'a, $v>,
+		}
+
+		impl<'a> $r<'a> {
+			#[cfg(feature = "single-threaded")]
+			pub(crate) fn lock(x: &'a std::cell::RefCell<$v>) -> Self {
+				Self {
+					guard: x.borrow_mut(),
+				}
+			}
+
+			#[cfg(not(feature = "single-threaded"))]
+			pub(crate) fn lock(x: &'a std::sync::Mutex<$v>) -> Self {
+				Self {
+					guard: x.lock().unwrap(),
+				}
+			}
 		}
 
 		impl PartialEq for $r<'_> {
@@ -376,11 +391,6 @@ macro_rules! define_var_ref {
 		impl std::ops::DerefMut for $r<'_> {
 			fn deref_mut(&mut self) -> &mut Self::Target {
 				&mut self.guard
-			}
-		}
-		impl<'a> From<std::sync::MutexGuard<'a, $v>> for $r<'a> {
-			fn from(guard: std::sync::MutexGuard<'a, $v>) -> Self {
-				Self { guard }
 			}
 		}
 	};
@@ -414,6 +424,62 @@ enum ValType {
 	IntSetVar,
 }
 
+#[cfg(feature = "single-threaded")]
+struct RefCount(u16);
+#[cfg(feature = "single-threaded")]
+impl RefCount {
+	pub fn load(&self, _order: atomic::Ordering) -> u16 {
+		self.0
+	}
+	pub fn fetch_add(&mut self, val: u16, _order: atomic::Ordering) -> u16 {
+		self.0 += val;
+		self.0
+	}
+	pub fn fetch_sub(&mut self, val: u16, _order: atomic::Ordering) -> u16 {
+		self.0 -= val;
+		self.0
+	}
+}
+#[cfg(feature = "single-threaded")]
+impl From<u16> for RefCount {
+	fn from(val: u16) -> Self {
+		Self(val)
+	}
+}
+
+#[cfg(feature = "single-threaded")]
+struct WeakCount(u8);
+#[cfg(feature = "single-threaded")]
+impl WeakCount {
+	pub fn load(&self, _order: atomic::Ordering) -> u8 {
+		self.0
+	}
+	pub fn fetch_add(&mut self, val: u8, _order: atomic::Ordering) -> u8 {
+		self.0 += val;
+		self.0
+	}
+	pub fn fetch_sub(&mut self, val: u8, _order: atomic::Ordering) -> u8 {
+		self.0 -= val;
+		self.0
+	}
+}
+#[cfg(feature = "single-threaded")]
+impl From<u8> for WeakCount {
+	fn from(val: u8) -> Self {
+		Self(val)
+	}
+}
+
+#[cfg(feature = "single-threaded")]
+type Mutable<T> = std::cell::RefCell<T>;
+
+#[cfg(not(feature = "single-threaded"))]
+type RefCount = std::sync::atomic::AtomicU16;
+#[cfg(not(feature = "single-threaded"))]
+type WeakCount = std::sync::atomic::AtomicU8;
+#[cfg(not(feature = "single-threaded"))]
+type Mutable<T> = std::sync::Mutex<T>;
+
 #[allow(dead_code)] // attributes accessed through [`.refs()`]
 #[define_varlen]
 struct ValueStorage {
@@ -428,9 +494,9 @@ struct ValueStorage {
 	#[controls_layout]
 	len: u32,
 	// Number of values referencing this value
-	ref_count: AtomicU16,
+	ref_count: RefCount,
 	// Number of weak references (e.g., CSE)
-	weak_count: AtomicU8,
+	weak_count: WeakCount,
 
 	#[varlen_array]
 	values: [Value; match *ty {
@@ -452,22 +518,22 @@ struct ValueStorage {
 		_ => 0,
 	}],
 	#[varlen_array]
-	bool_var: [Mutex<BoolVar>; match *ty {
+	bool_var: [Mutable<BoolVar>; match *ty {
 		ValType::BoolVar => 1,
 		_ => 0,
 	}],
 	#[varlen_array]
-	int_var: [Mutex<IntVar>; match *ty {
+	int_var: [Mutable<IntVar>; match *ty {
 		ValType::IntVar => 1,
 		_ => 0,
 	}],
 	#[varlen_array]
-	float_var: [Mutex<FloatVar>; match *ty {
+	float_var: [Mutable<FloatVar>; match *ty {
 		ValType::IntVar => 1,
 		_ => 0,
 	}],
 	#[varlen_array]
-	int_set_var: [Mutex<IntSetVar>; match *ty {
+	int_set_var: [Mutable<IntSetVar>; match *ty {
 		ValType::IntSetVar => 1,
 		_ => 0,
 	}],
