@@ -271,7 +271,7 @@ mod test {
 
 	#[test]
 	fn test_integer_literal() {
-		check_ast(
+		check_ast_mzn(
 			"x = 1;",
 			expect!([r#"
     MznModel(
@@ -307,7 +307,7 @@ mod test {
 
 	#[test]
 	fn test_float_literal() {
-		check_ast(
+		check_ast_mzn(
 			"x = 1.2;",
 			expect!([r#"
 MznModel(
@@ -343,7 +343,7 @@ MznModel(
 
 	#[test]
 	fn test_string_literal() {
-		check_ast(
+		check_ast_mzn(
 			r#"x = "foo";"#,
 			expect!([r#"
 MznModel(
@@ -377,7 +377,7 @@ MznModel(
 
 	#[test]
 	fn test_absent() {
-		check_ast(
+		check_ast_mzn(
 			"x = <>;",
 			expect!([r#"
 MznModel(
@@ -410,7 +410,7 @@ MznModel(
 
 	#[test]
 	fn test_infinity() {
-		check_ast(
+		check_ast_mzn(
 			r#"x = infinity;"#,
 			expect!([r#"
     MznModel(
@@ -443,7 +443,7 @@ MznModel(
 
 	#[test]
 	fn test_non_decimal() {
-		check_ast(
+		check_ast_mzn(
 			r#"x = 0xFF;"#,
 			expect!([r#"
     MznModel(
@@ -476,7 +476,7 @@ MznModel(
 "#]),
 		);
 
-		check_ast(
+		check_ast_mzn(
 			r#"x = 0b11;"#,
 			expect!([r#"
     MznModel(
@@ -509,7 +509,7 @@ MznModel(
 "#]),
 		);
 
-		check_ast(
+		check_ast_mzn(
 			r#"x = 0o77;"#,
 			expect!([r#"
     MznModel(

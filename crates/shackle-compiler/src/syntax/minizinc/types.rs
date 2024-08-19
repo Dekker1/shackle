@@ -363,7 +363,7 @@ mod test {
 
 	#[test]
 	fn test_array_type() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 			array [_] of bool: x;
 			array [foo, bar] of bool: y;
@@ -504,7 +504,7 @@ mod test {
 
 	#[test]
 	fn test_tuple_type() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 			tuple(int, bool): x;
 			tuple(int, tuple(bool, float)): y;
@@ -646,7 +646,7 @@ mod test {
 
 	#[test]
 	fn test_record_type() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 			record(int: a, bool: b): x;
 			record(int: a, record(bool: c, float: d): b): y;
@@ -842,7 +842,7 @@ mod test {
 
 	#[test]
 	fn test_operation_type() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 			op(int: (bool, string)): x;
 		"#,
@@ -923,7 +923,7 @@ mod test {
 
 	#[test]
 	fn test_type_base() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 			int: a;
 			var bool: b;

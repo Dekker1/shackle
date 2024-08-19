@@ -522,7 +522,7 @@ mod test {
 
 	#[test]
 	fn test_annotated_expression() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 		x = foo :: bar :: qux;
         var 1..n: y;
@@ -636,7 +636,7 @@ mod test {
 
 	#[test]
 	fn test_identifier() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 		bool: x;
 		bool: 'hello world';
@@ -742,7 +742,7 @@ MznModel(
 
 	#[test]
 	fn test_if_then_else() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 		x = if a then b else c endif;
 		y = if a then b elseif c then d else e endif;
@@ -918,7 +918,7 @@ MznModel(
 
 	#[test]
 	fn test_call() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 		x = foo();
 		y = foo(one, two);
@@ -1059,7 +1059,7 @@ MznModel(
 
 	#[test]
 	fn test_prefix_operator() {
-		check_ast(
+		check_ast_mzn(
 			"x = -a;",
 			expect!([r#"
 MznModel(
@@ -1104,7 +1104,7 @@ MznModel(
 
 	#[test]
 	fn test_infix_operator() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 		x = a + b;
 		y = a + b * c;
@@ -1215,7 +1215,7 @@ MznModel(
 
 	#[test]
 	fn test_postfix_operator() {
-		check_ast(
+		check_ast_mzn(
 			"x = a..;",
 			expect!([r#"
 MznModel(
@@ -1260,7 +1260,7 @@ MznModel(
 
 	#[test]
 	fn test_generator_call() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 			constraint forall (i in s) (true);
 			constraint exists (i, j in s, k in t where p) (true);
@@ -1421,7 +1421,7 @@ MznModel(
 
 	#[test]
 	fn test_string_interpolation() {
-		check_ast(
+		check_ast_mzn(
 			r#"x = "foo\(y)bar";"#,
 			expect!([r#"
 MznModel(
@@ -1472,7 +1472,7 @@ MznModel(
 
 	#[test]
 	fn test_let() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 			constraint let {
 				var int: x;
@@ -1554,9 +1554,9 @@ MznModel(
 
 	#[test]
 	fn test_case() {
-		check_ast(
+		check_ast_mzn(
 			r#"
-			x = case a of 
+			x = case a of
 					Foo(b) => true,
 					_ => false
 				endcase;
@@ -1646,7 +1646,7 @@ MznModel(
 
 	#[test]
 	fn test_tuple_access() {
-		check_ast(
+		check_ast_mzn(
 			"x = foo.1;",
 			expect!([r#"
 MznModel(
@@ -1693,7 +1693,7 @@ MznModel(
 
 	#[test]
 	fn test_record_access() {
-		check_ast(
+		check_ast_mzn(
 			"x = foo.bar;",
 			expect!([r#"
 MznModel(
@@ -1741,7 +1741,7 @@ MznModel(
 	#[test]
 
 	fn test_lambda() {
-		check_ast(
+		check_ast_mzn(
 			"x = lambda int: (int: x) => x;",
 			expect!([r#"
 MznModel(

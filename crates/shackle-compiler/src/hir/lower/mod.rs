@@ -3,6 +3,8 @@
 
 pub mod eprime;
 pub mod minizinc;
+pub mod xcsp3;
+
 #[cfg(test)]
 pub mod test;
 
@@ -12,7 +14,7 @@ use self::{eprime::ItemCollector as EPrimeItemCollector, minizinc::ItemCollector
 use crate::{
 	constants::IdentifierRegistry,
 	file::ModelRef,
-	hir::{db::Hir, source::SourceMap, *},
+	hir::{db::Hir, lower::xcsp3::XcspItemCollector, source::SourceMap, *},
 	syntax::ast::ConstraintModel,
 	Error,
 };
@@ -40,6 +42,21 @@ pub fn lower_items(db: &dyn Hir, model: ModelRef) -> (Arc<Model>, Arc<SourceMap>
 				ctx.collect_item(item);
 			}
 			ctx.add_solve();
+			let (m, sm, e) = ctx.finish();
+			(Arc::new(m), Arc::new(sm), Arc::new(e))
+		}
+		ConstraintModel::XcspModel(instance) => {
+			let mut ctx = XcspItemCollector::new(db, &identifiers, model);
+			for item in instance.variables {
+				ctx.collect_variable(item);
+			}
+			for item in instance.arrays {
+				ctx.collect_array(item);
+			}
+			for item in instance.constraints {
+				ctx.collect_constraint(item);
+			}
+			ctx.collect_objectives(instance.objectives);
 			let (m, sm, e) = ctx.finish();
 			(Arc::new(m), Arc::new(sm), Arc::new(e))
 		}

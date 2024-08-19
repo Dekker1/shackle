@@ -375,7 +375,7 @@ macro_rules! ast_enum {
 pub(crate) use ast_enum;
 use tree_sitter::TreeCursor;
 
-use super::{cst::Cst, eprime::EPrimeModel, minizinc::MznModel};
+use super::{cst::Cst, eprime::EPrimeModel, minizinc::MznModel, xcsp::XcspModel};
 
 /// ConstraintModel represents an AST of a constraint model
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
@@ -384,6 +384,8 @@ pub enum ConstraintModel {
 	MznModel(MznModel),
 	/// Essence' model
 	EPrimeModel(EPrimeModel),
+	/// Essence' model
+	XcspModel(XcspModel),
 }
 
 #[cfg(test)]
@@ -402,7 +404,9 @@ pub mod test {
 		let lang = match language {
 			InputLang::MiniZinc => tree_sitter_minizinc::language(),
 			InputLang::EPrime => tree_sitter_eprime::language(),
-			_ => unreachable!("check_ast_with_lang should only be called on model files"),
+			_ => unreachable!(
+				"check_ast_with_lang should only be called on Essence' or MiniZinc files"
+			),
 		};
 		let mut parser = Parser::new();
 		parser.set_language(&lang).unwrap();
@@ -411,13 +415,15 @@ pub mod test {
 		let model = match language {
 			InputLang::MiniZinc => ConstraintModel::MznModel(MznModel::new(cst)),
 			InputLang::EPrime => ConstraintModel::EPrimeModel(EPrimeModel::new(cst)),
-			_ => unreachable!("check_ast_with_lang should only be called on model files"),
+			_ => unreachable!(
+				"check_ast_with_lang should only be called on Essence' or MiniZinc files"
+			),
 		};
 		expected.assert_debug_eq(&model);
 	}
 
 	/// Helper to check parsed AST in MiniZinc
-	pub fn check_ast(source: &str, expected: Expect) {
+	pub fn check_ast_mzn(source: &str, expected: Expect) {
 		check_ast_with_lang(InputLang::MiniZinc, source, expected)
 	}
 

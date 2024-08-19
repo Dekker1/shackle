@@ -283,7 +283,7 @@ mod test {
 
 	#[test]
 	fn test_tuple_literal() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 		x = (1, 2);
 		y = (1, (2, 3));
@@ -388,7 +388,7 @@ MznModel(
 
 	#[test]
 	fn test_record_literal() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 		x = (a: 1, b: 2);
 		y = (a: 1, b: (c: 2, d: 3));
@@ -547,7 +547,7 @@ MznModel(
 
 	#[test]
 	fn test_set_literal() {
-		check_ast(
+		check_ast_mzn(
 			"x = {1, 2};",
 			expect!([r#"
 MznModel(
@@ -598,7 +598,7 @@ MznModel(
 
 	#[test]
 	fn test_array_literal() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 		x = [1, 3];
 		y = [2: 1, 3];
@@ -869,7 +869,7 @@ MznModel(
 
 	#[test]
 	fn test_2d_array_literal() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 		x = [| 1, 2
 		     | 3, 4 |];
@@ -1138,7 +1138,7 @@ MznModel(
 
 	#[test]
 	fn test_array_access() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 		x = foo[1];
 		y = foo[1, 2];
@@ -1306,7 +1306,7 @@ MznModel(
 
 	#[test]
 	fn test_array_comprehension() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 		x = [1 | i in s];
 		y = [i: v | i in 1..3, j in s where i < j];
@@ -1681,7 +1681,7 @@ MznModel(
 
 	#[test]
 	fn test_set_comprehension() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 		x = {v | i in s};
 		y = {v | i in 1..3, j in s where i < j};

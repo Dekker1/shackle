@@ -181,7 +181,7 @@ impl Compile {
 		let mut data = Vec::with_capacity(self.files.len() - 1);
 		for f in self.files.iter() {
 			match f.extension().and_then(OsStr::to_str) {
-				Some("mzn") | Some("eprime") => {
+				Some("mzn") | Some("eprime") | Some("xml") => {
 					if let Some(other) = model_file {
 						return Err(Report::msg(format!(
 							"detected multiple model files: `{}' and `{}'",

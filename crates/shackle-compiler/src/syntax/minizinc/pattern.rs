@@ -127,7 +127,7 @@ mod test {
 
 	#[test]
 	fn test_patterns() {
-		check_ast(
+		check_ast_mzn(
 			r#"
 		any: (a: (p, q), b: r) = foo;
 		any: v = case x of

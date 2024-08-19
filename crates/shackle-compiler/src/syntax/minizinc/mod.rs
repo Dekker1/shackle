@@ -73,7 +73,7 @@ mod test {
 
 	#[test]
 	fn test_model() {
-		check_ast(
+		check_ast_mzn(
 			r#"% Line comment"#,
 			expect!([r#"
 MznModel(

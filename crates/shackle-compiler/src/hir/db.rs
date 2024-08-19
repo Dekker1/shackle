@@ -17,7 +17,7 @@ use crate::{
 	constants::IdentifierRegistry,
 	db::{CompilerSettings, FileReader, Interner, Upcast},
 	diagnostics::{Diagnostics, IncludeError, MultipleErrors},
-	file::{FileRef, ModelRef, SourceFile},
+	file::{FileRef, InputLang, ModelRef, SourceFile},
 	syntax::{
 		ast::{AstNode, ConstraintModel},
 		db::SourceParser,
@@ -316,14 +316,19 @@ fn resolve_includes(db: &dyn Hir) -> Result<Arc<Vec<ModelRef>>> {
 
 		let model = match db.ast(*file) {
 			Ok(ConstraintModel::MznModel(m)) => m,
-			Ok(ConstraintModel::EPrimeModel(_)) => {
+			m @ Ok(ConstraintModel::EPrimeModel(_) | ConstraintModel::XcspModel(_)) => {
 				models.push(file);
-				if let Some(eprime_redefs) = search_dirs
+				let file_name = match m {
+					Ok(ConstraintModel::EPrimeModel(_)) => "eprime/eprime_redefinitions.mzn",
+					Ok(ConstraintModel::XcspModel(_)) => "xcsp3/xcsp3_redefinitions.mzn",
+					_ => unreachable!(),
+				};
+				if let Some(file) = search_dirs
 					.iter()
-					.map(|p| p.join("eprime/eprime_redefinitions.mzn"))
+					.map(|p| p.join(file_name))
 					.find(|p| p.exists())
 				{
-					todo.push(FileRef::new(&eprime_redefs, db.upcast()).into())
+					todo.push(FileRef::new(&file, db.upcast()).into())
 				}
 				continue;
 			}
@@ -530,11 +535,17 @@ fn syntax_errors(db: &dyn Hir) -> Arc<Vec<Error>> {
 		.resolve_includes()
 		.expect("Can't get syntax errors when resolving includes failed")
 		.iter()
-		.filter_map(|m| {
-			db.cst(**m)
+		.filter_map(|m| match m.lang(db.upcast()) {
+			InputLang::MiniZinc | InputLang::EPrime => db
+				.cst(**m)
 				.unwrap()
 				.error(|file_ref| SourceFile::new(file_ref.unwrap(), db.upcast()))
-				.err()
+				.err(),
+			InputLang::Xcsp3 => match db.ast(**m) {
+				Err(Error::SyntaxError(e)) => Some(e),
+				_ => None,
+			},
+			_ => unreachable!("data files should not occur in includes"),
 		})
 		.map(|e| e.into())
 		.collect::<Vec<_>>();

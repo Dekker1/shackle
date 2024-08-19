@@ -469,7 +469,7 @@ mod test {
 
 	#[test]
 	fn test_include() {
-		check_ast(
+		check_ast_mzn(
 			r#"include "foo.mzn";"#,
 			expect!([r#"
     MznModel(
@@ -493,7 +493,7 @@ mod test {
 
 	#[test]
 	fn test_declaration() {
-		check_ast(
+		check_ast_mzn(
 			"int: x = 3;",
 			expect!([r#"
     MznModel(
@@ -546,7 +546,7 @@ mod test {
 
 	#[test]
 	fn test_enumeration() {
-		check_ast(
+		check_ast_mzn(
 			"enum Foo = {A, B, C};",
 			expect!([r#"
     MznModel(
@@ -600,7 +600,7 @@ mod test {
 
 	#[test]
 	fn test_assignment() {
-		check_ast(
+		check_ast_mzn(
 			"x = 1;",
 			expect!([r#"
     MznModel(
@@ -636,7 +636,7 @@ mod test {
 
 	#[test]
 	fn test_constraint() {
-		check_ast(
+		check_ast_mzn(
 			"constraint x > 1;",
 			expect!([r#"
     MznModel(
@@ -682,7 +682,7 @@ mod test {
 
 	#[test]
 	fn test_solve() {
-		check_ast(
+		check_ast_mzn(
 			"solve minimize x;",
 			expect!([r#"
     MznModel(
@@ -713,7 +713,7 @@ mod test {
 
 	#[test]
 	fn test_output() {
-		check_ast(
+		check_ast_mzn(
 			r#"output ["foo"];"#,
 			expect!([r#"
     MznModel(
@@ -751,7 +751,7 @@ mod test {
 
 	#[test]
 	fn test_function() {
-		check_ast(
+		check_ast_mzn(
 			"function int: foo(int: x) = x + 1;",
 			expect!([r#"
     MznModel(
@@ -849,7 +849,7 @@ mod test {
 
 	#[test]
 	fn test_type_alias() {
-		check_ast(
+		check_ast_mzn(
 			"type Foo = set of int",
 			expect!([r#"
     MznModel(

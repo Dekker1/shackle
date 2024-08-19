@@ -39,6 +39,8 @@ pub enum InputLang {
 	MiniZinc,
 	/// Essence' modelling language
 	EPrime,
+	/// XCSP3 model description language
+	Xcsp3,
 	/// DataZinc data input language
 	DataZinc,
 	/// JSON data input language
@@ -58,6 +60,7 @@ impl InputLang {
 			Some("eprime") => Self::EPrime,
 			Some("dzn") => Self::DataZinc,
 			Some("json") => Self::Json,
+			Some("xml") => Self::Xcsp3,
 			_ => Self::MiniZinc,
 		}
 	}
@@ -313,7 +316,10 @@ pub fn input_models(db: &dyn FileReader) -> Arc<Vec<ModelRef>> {
 			.iter()
 			.enumerate()
 			.filter_map(|(idx, f)| {
-				if matches!(f.lang(), InputLang::MiniZinc | InputLang::EPrime) {
+				if matches!(
+					f.lang(),
+					InputLang::MiniZinc | InputLang::EPrime | InputLang::Xcsp3
+				) {
 					Some(db.intern_file_ref(FileRefData::InputFile(idx)).into())
 				} else {
 					None
