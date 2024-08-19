@@ -26,7 +26,7 @@ use crate::{
 };
 
 /// Constraint forcing a set of expressions to take distinct values
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct AllDifferent<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -51,7 +51,7 @@ pub struct AllDifferent<Identifier = String> {
 }
 
 /// Constraint forcing a set of expressions to take the same value
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct AllEqual<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -80,7 +80,7 @@ pub struct AllEqual<Identifier = String> {
 /// Constraint forcing a list of items, whose sizes are given, are put in
 /// different bins in such a way that the total size of the items in each bin
 /// respects a numerical condition.
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(
 	deserialize = "Identifier: std::str::FromStr",
 	serialize = "Identifier: std::fmt::Display"
@@ -125,7 +125,7 @@ pub struct BinPacking<Identifier = String> {
 
 /// Constraint enforcing the amount of times certain values are taken by a set
 /// of expressions.
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 
 pub struct Cardinality<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -151,7 +151,7 @@ pub struct Cardinality<Identifier = String> {
 /// If [`Self::value`] is not empty, then the constraint enforces that the ith
 /// expression in [`Self::list`] takes the value 1 iff the expression in
 /// [`Self::value`] takes the value i.
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Channel<Identifier = String> {
 	/// Optional metadata for the constraint
 	pub info: MetaInfo<Identifier>,
@@ -173,7 +173,7 @@ pub struct Channel<Identifier = String> {
 /// effectively making excluding them from the cycle. When [`Self::size`] is
 /// given, then the circuit must have the length of [`Self::size`]. Otherwise,
 /// the circuit must be at least 2 in length.
-#[derive(Clone, Debug, PartialEq, Hash, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(bound(serialize = "Identifier: Display"))]
 pub struct Circuit<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -189,7 +189,7 @@ pub struct Circuit<Identifier = String> {
 /// Condition to be enforced
 ///
 /// This type is used as part of a larger constraint type
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Condition<Identifier> {
 	/// Operator of the condition
 	pub operator: Operator,
@@ -198,7 +198,7 @@ pub struct Condition<Identifier> {
 }
 
 /// Enumerated type to represent the different possible constraints
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(
 	rename_all = "camelCase",
 	bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display")
@@ -253,7 +253,7 @@ pub enum Constraint<Identifier = String> {
 /// Constraint that enforced that the number of times expressions in
 /// [`Self::list`] take a value from [`Self::values`] abides by the given
 /// [`Self::condition`].
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct Count<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -277,7 +277,7 @@ pub struct Count<Identifier = String> {
 
 /// Constraint that enforces that at each point in time, the cumulated height of
 /// tasks that overlap that point, respects the given [`Self::condition`].
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct Cumulative<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -308,7 +308,7 @@ pub struct Cumulative<Identifier = String> {
 /// Constraint that enforces that the value of the expression at
 /// [`Self::index`] abides by the given [`Self::condition`], or alternatively is
 /// equal the expression [`Self::value`].
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Hash, Eq, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct Element<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -331,7 +331,7 @@ pub struct Element<Identifier = String> {
 /// Constraint that enforces that the expressions in [`Self::list`] either take
 /// the values of one of the rows in [`Self::supports`], or alternatively do not
 /// match any of the rows in [`Self::conflicts`].
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct Extension<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -364,7 +364,7 @@ pub struct Extension<Identifier = String> {
 
 /// Constraint that enforces that the Boolean Expression [`Self::function`] must
 /// be satisfied.
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct Intension<Identifier> {
 	/// Optional metadata for the constraint
@@ -379,7 +379,7 @@ pub struct Intension<Identifier> {
 /// item chosen. The constraint enforces that the sum of the [`Self::weights`]
 /// abides by the first [`Self::condition`] and the sum of the [`Self::profits`]
 /// abides by the second [`Self::condition`].
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct Knapsack<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -410,7 +410,7 @@ pub struct Knapsack<Identifier = String> {
 
 /// Constraint that enforces that the maximum value taken by the expression in
 /// [`Self::list`] abides by the given [`Self::condition`].
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct Maximum<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -430,7 +430,7 @@ pub struct Maximum<Identifier = String> {
 /// Constraint that enforces that the values of the [`Self::list`] follow a
 /// valid path according to the [`Self::transitions`] that form an Multi-valued
 /// Decision Diagram (MDD).
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct Mdd<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -452,7 +452,7 @@ pub struct Mdd<Identifier = String> {
 
 /// Constraint that enforces that the minimum value taken by the expression in
 /// [`Self::list`] abides by the given [`Self::condition`].
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct Minimum<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -471,7 +471,7 @@ pub struct Minimum<Identifier = String> {
 
 /// Cosntraint that enforces a [`Self::condition`] on the number of different
 /// values taken by the expressions in [`Self::list`].
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct NValues<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -502,7 +502,7 @@ pub struct NValues<Identifier = String> {
 /// When [`Self::zero_ignored`] field is set to `false`, it indicates that
 /// zero-length tasks cannot be packed anywhere (cannot overlap with other
 /// tasks).
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct NoOverlap<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -531,7 +531,7 @@ pub struct NoOverlap<Identifier = String> {
 
 /// List of expressions where the index is considered to start at
 /// [`Self::start_index`].
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct OffsetList<Identifier> {
 	/// List of expressions
@@ -547,7 +547,7 @@ pub struct OffsetList<Identifier> {
 }
 
 /// Operator used as part of the [`Condition`] struct or a constraint.
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Operator {
 	/// Less than
@@ -571,7 +571,7 @@ pub enum Operator {
 ///
 /// The [`Self::lengths`] field indicates the minimum distances between any two
 /// successive variables of [`Self::list`].
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct Ordered<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -602,7 +602,7 @@ pub struct Ordered<Identifier = String> {
 /// Cosntraint that enforces that first occurence of each values of the
 /// expressions in [`Self::list`] occur in the same order as the values in
 /// [`Self::values`].
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Precedence<Identifier = String> {
 	/// Optional metadata for the constraint
 	pub info: MetaInfo<Identifier>,
@@ -617,7 +617,7 @@ pub struct Precedence<Identifier = String> {
 /// Constraint that enforces that the values of the expressions in
 /// [`Self::list`] follow a valid sequence of [`Self::transitions`], starting
 /// from tje [`Self::start`] state and ending at the [`Self::finish`] state.
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct Regular<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -650,7 +650,7 @@ pub struct Regular<Identifier = String> {
 /// Constraint that enforces that the sum of the values of the expressions in
 /// [`Self::list`], optionally multiplied by [`Self::coeffs`], abides by the
 /// [`Self::condition`].
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct Sum<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -675,7 +675,7 @@ pub struct Sum<Identifier = String> {
 }
 
 /// Transition between two state for the regular and MDD constraints.
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Transition<Identifier> {
 	/// Identifier of the source state
 	pub from: Identifier,

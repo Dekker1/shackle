@@ -33,7 +33,7 @@ pub const RESERVED: &[&str] = &[
 ];
 
 /// Expression resulting in a Boolean value or decision variable
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum BoolExp<Identifier> {
 	/// Boolean constant
 	///
@@ -83,7 +83,7 @@ pub enum BoolExp<Identifier> {
 }
 
 /// Expression of any type
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Exp<Identifier> {
 	/// A Boolean expression
 	Bool(Box<BoolExp<Identifier>>),
@@ -96,7 +96,7 @@ pub enum Exp<Identifier> {
 }
 
 /// Expression resulting in an integer value or decision variable
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum IntExp<Identifier> {
 	/// Constant integer value
 	Const(IntVal),
@@ -139,7 +139,7 @@ pub enum IntExp<Identifier> {
 }
 
 /// Expression resulting in an set of integers value or decision variable
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum SetExp<Identifier> {
 	/// Set literal specifying each of its values (i.e., {x1, ..., xn})
 	Set(Vec<IntExp<Identifier>>),

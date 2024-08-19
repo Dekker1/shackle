@@ -79,7 +79,7 @@ use crate::{
 };
 
 /// Definition of a k-dimensional arrays of variables
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Array<Identifier = String> {
 	/// Name used to refer to the array
 	pub identifier: Identifier,
@@ -98,7 +98,7 @@ pub struct Array<Identifier = String> {
 }
 
 /// The way in which combinations of objectives are to be evaluated
-#[derive(Clone, Debug, Default, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum CombinationType {
 	/// Objectives are lexicographically ordered
@@ -209,7 +209,7 @@ pub enum Indexing {
 }
 
 /// XCSP3 problem instance
-#[derive(Clone, PartialEq, Debug, Hash)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub struct Instance<Identifier = String> {
 	/// The type of the framework used to express the instance.
 	pub ty: FrameworkType,
@@ -227,7 +227,7 @@ pub struct Instance<Identifier = String> {
 ///
 /// This structure is used both to represent an elementary constraint in an
 /// instance, and to represent the solution to an instance.
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize)]
 #[serde(bound(deserialize = "Identifier: FromStr"))]
 pub struct Instantiation<Identifier = String> {
 	/// Optional metadata for the constraint
@@ -263,7 +263,7 @@ pub struct Instantiation<Identifier = String> {
 }
 
 /// The type of instantiation
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum InstantiationType {
 	/// A solution that satisfies all constraints
@@ -278,7 +278,7 @@ pub type IntVal = i64;
 
 /// Type used to capture optional metadata that can be attached to most XCSP3
 /// elements
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct MetaInfo<Identifier> {
 	/// Name assigned to the element
@@ -296,7 +296,7 @@ pub struct MetaInfo<Identifier> {
 }
 
 /// Objective function
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(
 	rename_all = "camelCase",
 	bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display")
@@ -313,7 +313,7 @@ pub enum Objective<Identifier = String> {
 }
 
 /// Collection of objective functions
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct Objectives<Identifier = String> {
 	/// Combinator to aggregate multiple objectives
@@ -325,7 +325,7 @@ pub struct Objectives<Identifier = String> {
 }
 
 /// Expression used to represent an objective function
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct ObjExp<Identifier = String> {
 	/// Optional metadata for the objective
@@ -352,7 +352,7 @@ pub struct ObjExp<Identifier = String> {
 }
 
 /// Evaluation method for the list of expressions in an objective function
-#[derive(Clone, Debug, Default, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ObjType {
 	/// Sum of the expressions
@@ -369,7 +369,7 @@ pub enum ObjType {
 }
 
 /// Definition of a variable
-#[derive(Clone, Debug, PartialEq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(bound(deserialize = "Identifier: FromStr", serialize = "Identifier: Display"))]
 pub struct Variable<Identifier = String> {
 	/// Name of the variable
