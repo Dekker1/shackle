@@ -377,7 +377,7 @@ pub enum Message<'a> {
 	Warning(&'a str),
 }
 
-impl<'a> Display for Message<'a> {
+impl Display for Message<'_> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
 			Message::Solution(sol) => {

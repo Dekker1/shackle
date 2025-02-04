@@ -407,7 +407,7 @@ struct ScopeTester<'a, T: Marker> {
 	ok: bool,
 }
 
-impl<'a, T: Marker> Visitor<'_, T> for ScopeTester<'a, T> {
+impl<T: Marker> Visitor<'_, T> for ScopeTester<'_, T> {
 	fn visit_expression(&mut self, model: &Model<T>, expression: &Expression<T>) {
 		if !self.ok {
 			return;

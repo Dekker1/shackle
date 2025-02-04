@@ -17,7 +17,7 @@ use crate::{
 #[derive(Clone)]
 pub(crate) struct SerdeValueVisitor<'a>(pub &'a Type);
 
-impl<'de, 'a> Visitor<'de> for SerdeValueVisitor<'a> {
+impl<'de> Visitor<'de> for SerdeValueVisitor<'_> {
 	type Value = ParserVal;
 
 	fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -226,7 +226,7 @@ impl<'de, 'a> Visitor<'de> for SerdeValueVisitor<'a> {
 	}
 }
 
-impl<'a, 'de> DeserializeSeed<'de> for SerdeValueVisitor<'a> {
+impl<'de> DeserializeSeed<'de> for SerdeValueVisitor<'_> {
 	type Value = ParserVal;
 
 	fn deserialize<D: serde::Deserializer<'de>>(
@@ -316,7 +316,7 @@ struct SerdeArrayVisitor<'a> {
 	depth: u8,
 }
 
-impl<'a, 'de> DeserializeSeed<'de> for SerdeArrayVisitor<'a> {
+impl<'de> DeserializeSeed<'de> for SerdeArrayVisitor<'_> {
 	type Value = ();
 
 	fn deserialize<D: serde::Deserializer<'de>>(
@@ -327,7 +327,7 @@ impl<'a, 'de> DeserializeSeed<'de> for SerdeArrayVisitor<'a> {
 	}
 }
 
-impl<'de, 'a> Visitor<'de> for SerdeArrayVisitor<'a> {
+impl<'de> Visitor<'de> for SerdeArrayVisitor<'_> {
 	type Value = ();
 
 	fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -789,7 +789,7 @@ impl Serialize for Enum {
 			c: &'a str,
 			a: &'a [Index],
 		}
-		impl<'a> Serialize for Ctor<'a> {
+		impl Serialize for Ctor<'_> {
 			fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
 				let mut map =
 					serializer.serialize_map(Some(if self.a.is_empty() { 1 } else { 2 }))?;
@@ -830,7 +830,7 @@ impl<'a> ArraySliceSerializer<'a> {
 		}
 	}
 }
-impl<'a> Serialize for ArraySliceSerializer<'a> {
+impl Serialize for ArraySliceSerializer<'_> {
 	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
 		debug_assert!(!self.indices.is_empty());
 		let idx = &self.indices[0];

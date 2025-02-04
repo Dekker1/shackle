@@ -16,7 +16,7 @@ pub enum FunctionResolutionError<T> {
 	AmbiguousOverloading(Vec<(T, FunctionEntry)>),
 }
 
-impl<'a, T> DebugPrint<'a> for FunctionResolutionError<T> {
+impl<T> DebugPrint<'_> for FunctionResolutionError<T> {
 	type Database = dyn Interner;
 
 	fn debug_print(&self, db: &Self::Database) -> String {

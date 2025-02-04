@@ -58,6 +58,7 @@ pub fn thir_transforms() -> impl FnMut(&dyn Thir, Model) -> Result<Model> {
 }
 
 #[cfg(test)]
+/// Test utilities for the THIR transformation phase.
 pub mod test {
 	use std::sync::Arc;
 

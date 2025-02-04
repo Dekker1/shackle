@@ -451,7 +451,7 @@ pub(crate) struct CtorLock<'a> {
 	lock: MutexGuard<'a, EnumInner>,
 }
 
-impl<'a> CtorLock<'a> {
+impl CtorLock<'_> {
 	/// Returns the list of the constructors of the enumerated type
 	///
 	/// ## Warning

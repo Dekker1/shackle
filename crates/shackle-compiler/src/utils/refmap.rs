@@ -13,7 +13,7 @@ pub struct RefMap<'a, K, V> {
 	map: FxHashMap<KeyRef<'a, K>, V>,
 }
 
-impl<'a, K, V> Default for RefMap<'a, K, V> {
+impl<K, V> Default for RefMap<'_, K, V> {
 	fn default() -> Self {
 		Self {
 			map: FxHashMap::default(),
@@ -98,7 +98,7 @@ pub struct RefSet<'a, K> {
 	set: FxHashSet<KeyRef<'a, K>>,
 }
 
-impl<'a, K> Default for RefSet<'a, K> {
+impl<K> Default for RefSet<'_, K> {
 	fn default() -> Self {
 		Self {
 			set: FxHashSet::default(),
@@ -146,16 +146,16 @@ impl<'a, K> Extend<&'a K> for RefSet<'a, K> {
 
 struct KeyRef<'a, T>(&'a T);
 
-impl<'a, T> PartialEq for KeyRef<'a, T> {
+impl<T> PartialEq for KeyRef<'_, T> {
 	fn eq(&self, other: &Self) -> bool {
 		ptr::eq(self.0, other.0)
 	}
 }
 
-impl<'a, T> Hash for KeyRef<'a, T> {
+impl<T> Hash for KeyRef<'_, T> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		ptr::hash(self.0, state)
 	}
 }
 
-impl<'a, T> Eq for KeyRef<'a, T> {}
+impl<T> Eq for KeyRef<'_, T> {}

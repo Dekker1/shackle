@@ -54,7 +54,7 @@ impl<T> Intermediate<T> {
 /// Access an intermediate value
 pub struct IntermediateValue<'a, T>(RwLockReadGuard<'a, Option<T>>);
 
-impl<'a, T> AsRef<T> for IntermediateValue<'a, T> {
+impl<T> AsRef<T> for IntermediateValue<'_, T> {
 	fn as_ref(&self) -> &T {
 		self.0.as_ref().expect("Intermediate already taken")
 	}

@@ -448,7 +448,7 @@ impl<Identifier: Ord + Display> Display for FlatZinc<Identifier> {
 	}
 }
 
-/// A name used to refer to an [`Array`], function, or [`Variable`]
+// /// A name used to refer to an [`Array`], function, or [`Variable`]
 // pub type Identifier = String;
 
 /// Literal values

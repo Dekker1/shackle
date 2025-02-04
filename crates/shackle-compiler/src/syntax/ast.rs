@@ -75,7 +75,7 @@ impl<'a, T: From<CstNode>> Children<'a, T> {
 	}
 }
 
-impl<'a, T: From<CstNode>> Iterator for Children<'a, T> {
+impl<T: From<CstNode>> Iterator for Children<'_, T> {
 	type Item = T;
 
 	fn next(&mut self) -> Option<T> {
@@ -387,6 +387,7 @@ pub enum ConstraintModel {
 }
 
 #[cfg(test)]
+/// Test utilities for the AST nodes.
 pub mod test {
 	use expect_test::{Expect, ExpectFile};
 	use tree_sitter::Parser;

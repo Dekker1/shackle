@@ -696,7 +696,7 @@ fn deserialize_int_tuples<'de, D: Deserializer<'de>>(
 ) -> Result<Vec<Vec<IntVal>>, D::Error> {
 	/// Visitor to parse a list of integer tuples
 	struct V;
-	impl<'de> Visitor<'de> for V {
+	impl Visitor<'_> for V {
 		type Value = Vec<Vec<IntVal>>;
 
 		fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -944,7 +944,7 @@ impl<'de, Identifier: FromStr> Deserialize<'de> for Condition<Identifier> {
 	) -> Result<Condition<Identifier>, D::Error> {
 		/// Visitor for parsing a condition.
 		struct V<X>(PhantomData<X>);
-		impl<'de, X: FromStr> Visitor<'de> for V<X> {
+		impl<X: FromStr> Visitor<'_> for V<X> {
 			type Value = Condition<X>;
 
 			fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -1112,7 +1112,7 @@ impl<Identifier: FromStr> Transition<Identifier> {
 	fn parse_vec<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<Self>, D::Error> {
 		/// Visitor for parsing a list of transitions.
 		struct V<X>(PhantomData<X>);
-		impl<'de, X: FromStr> Visitor<'de> for V<X> {
+		impl<X: FromStr> Visitor<'_> for V<X> {
 			type Value = Vec<Transition<X>>;
 
 			fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

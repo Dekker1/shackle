@@ -94,6 +94,7 @@ impl Program {
 		}
 
 		let mut child = cmd.spawn().unwrap(); // TODO: fix unwrap
+		child.wait().unwrap(); // TODO: fix unwrap
 		let stdout = child.stdout.take().unwrap();
 
 		let mut status = Status::Unknown;
@@ -144,7 +145,7 @@ struct LegacyValue<'a> {
 	ty: &'a Type,
 }
 
-impl<'a> Display for LegacyValue<'a> {
+impl Display for LegacyValue<'_> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		let val = self.val;
 		let ty = self.ty;
@@ -277,7 +278,7 @@ impl<'a> Display for LegacyValue<'a> {
 	}
 }
 struct DummyValue<'a>(&'a Type);
-impl<'a> Display for DummyValue<'a> {
+impl Display for DummyValue<'_> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		let ty = self.0;
 		match ty {
@@ -314,7 +315,7 @@ impl<'a> Display for DummyValue<'a> {
 }
 
 struct LegacyEnum<'a>(&'a Enum);
-impl<'a> Display for LegacyEnum<'a> {
+impl Display for LegacyEnum<'_> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		const INT: Type = Type::Integer(crate::OptType::NonOpt);
 		write!(
@@ -351,7 +352,7 @@ enum LegacyOutput<'a> {
 	Error(Error),
 }
 
-impl<'de, 'a> Visitor<'de> for SerdeMessageVisitor<'a> {
+impl<'de> Visitor<'de> for SerdeMessageVisitor<'_> {
 	type Value = LegacyOutput<'de>;
 
 	fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -485,7 +486,7 @@ impl<'de, 'a> Visitor<'de> for SerdeMessageVisitor<'a> {
 #[derive(Clone)]
 struct SerdeOutputVisitor<'a>(pub &'a FxHashMap<Arc<str>, Type>);
 
-impl<'de, 'a> Visitor<'de> for SerdeOutputVisitor<'a> {
+impl<'de> Visitor<'de> for SerdeOutputVisitor<'_> {
 	type Value = Result<FxHashMap<&'de str, Value>, Error>;
 
 	fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -516,7 +517,7 @@ impl<'de, 'a> Visitor<'de> for SerdeOutputVisitor<'a> {
 	}
 }
 
-impl<'a, 'de> DeserializeSeed<'de> for SerdeOutputVisitor<'a> {
+impl<'de> DeserializeSeed<'de> for SerdeOutputVisitor<'_> {
 	type Value = Result<FxHashMap<&'de str, Value>, Error>;
 
 	fn deserialize<D: serde::Deserializer<'de>>(

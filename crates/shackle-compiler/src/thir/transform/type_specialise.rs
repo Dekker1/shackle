@@ -49,7 +49,7 @@ struct TypeSpecialiser<'a, Dst: Marker> {
 	original_functions: OverloadMap<'a>,
 }
 
-impl<'a, Dst: Marker> Folder<'_, Dst> for TypeSpecialiser<'a, Dst> {
+impl<Dst: Marker> Folder<'_, Dst> for TypeSpecialiser<'_, Dst> {
 	fn model(&mut self) -> &mut Model<Dst> {
 		&mut self.specialised_model
 	}
@@ -186,7 +186,7 @@ impl<'a, Dst: Marker> Folder<'_, Dst> for TypeSpecialiser<'a, Dst> {
 	}
 }
 
-impl<'a, Dst: Marker> TypeSpecialiser<'a, Dst> {
+impl<Dst: Marker> TypeSpecialiser<'_, Dst> {
 	// Get or create the specialised version of a polymorphic function with the given argument types
 	fn instantiate(
 		&mut self,

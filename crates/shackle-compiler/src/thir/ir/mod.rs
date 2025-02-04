@@ -470,7 +470,7 @@ pub struct OverloadMap<'a, T: Marker = ()> {
 	overloads: FxHashMap<FunctionName, Vec<FunctionId<T>>>,
 }
 
-impl<'a, T: Marker> OverloadMap<'a, T> {
+impl<T: Marker> OverloadMap<'_, T> {
 	/// Filter the overloads in this map
 	pub fn filter(&mut self, mut p: impl FnMut(&FunctionItem<T>) -> bool) {
 		for overloads in self.overloads.values_mut() {
@@ -518,7 +518,7 @@ impl<'a, T: Marker> OverloadMap<'a, T> {
 	}
 }
 
-impl<'a, T: Marker> Deref for OverloadMap<'a, T> {
+impl<T: Marker> Deref for OverloadMap<'_, T> {
 	type Target = FxHashMap<FunctionName, Vec<FunctionId<T>>>;
 
 	fn deref(&self) -> &Self::Target {

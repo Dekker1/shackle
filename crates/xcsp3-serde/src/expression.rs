@@ -411,7 +411,7 @@ impl<'de, Identifier: FromStr> Deserialize<'de> for BoolExp<Identifier> {
 	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<BoolExp<Identifier>, D::Error> {
 		/// Visitor for deserializing a `BoolExp`.
 		struct V<Ident>(PhantomData<Ident>);
-		impl<'de, Ident: FromStr> Visitor<'de> for V<Ident> {
+		impl<Ident: FromStr> Visitor<'_> for V<Ident> {
 			type Value = BoolExp<Ident>;
 
 			fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -514,7 +514,7 @@ impl<Identifier: FromStr> Exp<Identifier> {
 	) -> Result<Vec<Self>, D::Error> {
 		/// Visitor for parsing a list of expressions
 		struct V<X>(PhantomData<X>);
-		impl<'de, X: FromStr> Visitor<'de> for V<X> {
+		impl<X: FromStr> Visitor<'_> for V<X> {
 			type Value = Vec<Exp<X>>;
 
 			fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -676,7 +676,7 @@ impl<Identifier: FromStr> IntExp<Identifier> {
 	) -> Result<Vec<Self>, D::Error> {
 		/// Visitor for a list of integer expressions
 		struct V<X>(PhantomData<X>);
-		impl<'de, X: FromStr> Visitor<'de> for V<X> {
+		impl<X: FromStr> Visitor<'_> for V<X> {
 			type Value = Vec<IntExp<X>>;
 
 			fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -698,7 +698,7 @@ impl<'de, Identifier: FromStr> Deserialize<'de> for IntExp<Identifier> {
 	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<IntExp<Identifier>, D::Error> {
 		/// Visitor for `IntExp`
 		struct V<Ident>(PhantomData<Ident>);
-		impl<'de, Ident: FromStr> Visitor<'de> for V<Ident> {
+		impl<Ident: FromStr> Visitor<'_> for V<Ident> {
 			type Value = IntExp<Ident>;
 
 			fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

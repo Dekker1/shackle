@@ -432,7 +432,7 @@ fn deserialize_ident<'de, D: Deserializer<'de>, Identifier: FromStr>(
 ) -> Result<Option<Identifier>, D::Error> {
 	/// Visitor to deserialize a string as an identifier
 	struct V<X>(PhantomData<X>);
-	impl<'de, X: FromStr> Visitor<'de> for V<X> {
+	impl<X: FromStr> Visitor<'_> for V<X> {
 		type Value = Option<X>;
 
 		fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -455,7 +455,7 @@ fn deserialize_int_vals<'de, D: Deserializer<'de>>(
 ) -> Result<Vec<IntVal>, D::Error> {
 	/// Visitor to parse a list of integers
 	struct V;
-	impl<'de> Visitor<'de> for V {
+	impl Visitor<'_> for V {
 		type Value = Vec<IntVal>;
 
 		fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -477,7 +477,7 @@ fn deserialize_range_list<'de, D: Deserializer<'de>>(
 ) -> Result<RangeList<IntVal>, D::Error> {
 	/// Visitor for deserializing a range list
 	struct V;
-	impl<'de> Visitor<'de> for V {
+	impl Visitor<'_> for V {
 		type Value = RangeList<IntVal>;
 
 		fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -498,7 +498,7 @@ fn deserialize_range_list<'de, D: Deserializer<'de>>(
 fn deserialize_size<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<usize>, D::Error> {
 	/// Visitor for deserializing a size expression
 	struct V;
-	impl<'de> Visitor<'de> for V {
+	impl Visitor<'_> for V {
 		type Value = Vec<usize>;
 
 		fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -778,7 +778,7 @@ impl<Identifier: Serialize + Display> Serialize for Instance<Identifier> {
 			/// Values serialized as <array> elements
 			array: &'a Vec<Array<Identifier>>,
 		}
-		impl<'a, Identifier: Display> Variables<'a, Identifier> {
+		impl<Identifier: Display> Variables<'_, Identifier> {
 			/// Check whether there are any variables or arrays to serialize
 			fn is_empty(&self) -> bool {
 				self.var.is_empty() && self.array.is_empty()
@@ -791,7 +791,7 @@ impl<Identifier: Serialize + Display> Serialize for Instance<Identifier> {
 			#[serde(rename = "$value")]
 			content: &'a Vec<Constraint<Identifier>>,
 		}
-		impl<'a, Identifier: Display> Constraints<'a, Identifier> {
+		impl<Identifier: Display> Constraints<'_, Identifier> {
 			/// Check whether there are any constraints to serialize
 			fn is_empty(&self) -> bool {
 				self.content.is_empty()
@@ -920,7 +920,7 @@ impl<Identifier: FromStr> VarRef<Identifier> {
 	fn parse_vec<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<Self>, D::Error> {
 		/// Visitor for parsing a list of variable references.
 		struct V<X>(PhantomData<X>);
-		impl<'de, X: FromStr> Visitor<'de> for V<X> {
+		impl<X: FromStr> Visitor<'_> for V<X> {
 			type Value = Vec<VarRef<X>>;
 
 			fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
