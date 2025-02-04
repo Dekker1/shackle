@@ -25,7 +25,6 @@ use bilge::{
 	Bitsized, TryFromBits,
 };
 use once_cell::sync::Lazy;
-pub use set::SetView;
 use varlen::{
 	define_varlen,
 	prelude::{ArrayInitializer, FromIterPrefix},
@@ -123,12 +122,12 @@ fn allocation_overflow() -> ! {
 }
 
 impl Value {
-	pub const MAX_INT: i64 = <u61 as Number>::MAX.value() as i64;
-	pub const MIN_INT: i64 = -(Self::MAX_INT + 1);
 	const FLOAT_SIGN_BIT: u64 = 0b1 << 63;
 	const FLOAT_TAG: u64 = 0b1;
 	const INT_SIGN_BIT: u64 = 0b100;
 	const INT_TAG: u64 = 0b10;
+	pub const MAX_INT: i64 = <u61 as Number>::MAX.value() as i64;
+	pub const MIN_INT: i64 = -(Self::MAX_INT + 1);
 
 	/// Determine the type of the reference based on bit-tags
 	fn ref_ty(&self) -> RefType {
@@ -384,6 +383,7 @@ macro_rules! define_var_ref {
 		impl Eq for $r<'_> {}
 		impl std::ops::Deref for $r<'_> {
 			type Target = $v;
+
 			fn deref(&self) -> &Self::Target {
 				&self.guard
 			}
@@ -431,10 +431,12 @@ impl RefCount {
 	pub fn load(&self, _order: atomic::Ordering) -> u16 {
 		self.0
 	}
+
 	pub fn fetch_add(&mut self, val: u16, _order: atomic::Ordering) -> u16 {
 		self.0 += val;
 		self.0
 	}
+
 	pub fn fetch_sub(&mut self, val: u16, _order: atomic::Ordering) -> u16 {
 		self.0 -= val;
 		self.0
@@ -454,10 +456,12 @@ impl WeakCount {
 	pub fn load(&self, _order: atomic::Ordering) -> u8 {
 		self.0
 	}
+
 	pub fn fetch_add(&mut self, val: u8, _order: atomic::Ordering) -> u8 {
 		self.0 += val;
 		self.0
 	}
+
 	pub fn fetch_sub(&mut self, val: u8, _order: atomic::Ordering) -> u8 {
 		self.0 -= val;
 		self.0

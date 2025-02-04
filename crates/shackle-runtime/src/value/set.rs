@@ -1,5 +1,4 @@
 use std::{
-	cmp::{max, min},
 	collections::VecDeque,
 	fmt::Display,
 	iter::{once, Chain, Copied, FilterMap, Map, Once},
@@ -8,180 +7,16 @@ use std::{
 
 use itertools::{Itertools, MapInto, Tuples};
 use once_cell::sync::Lazy;
+use rangelist::IntervalIterator;
 use varlen::array_init::FromIterPrefix;
 
-use super::num::FloatVal;
 use crate::{
-	value::{num::IntVal, value_storage, InitEmpty, ValType, ValueStorage},
+	value::{
+		num::{FloatVal, IntVal},
+		value_storage, InitEmpty, ValType, ValueStorage,
+	},
 	Value,
 };
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum RangeOrdering {
-	/// A compared range is strictly less than another.
-	Less = -1,
-	/// A compared range overlaps with another.
-	Overlap = 0,
-	/// A compared range is strictly greater than another.
-	Greater = 1,
-}
-
-pub trait SetView<T: Clone + Ord> {
-	type Iter: Iterator<Item = RangeInclusive<T>>;
-	/// Gives the lower bound of the set, or None if there is no lower bound
-	fn lb(&self) -> T;
-	/// Gives the upper bound of the set, or None if there is no lower bound
-	fn ub(&self) -> T;
-	/// Returns an iterator over the intervals of values contained in the set.
-	///
-	/// The value `None` is used to signal that the interval is unbounded on that
-	/// side. It can be assumed that only the first left value and the
-	/// last right value can be None.
-	fn intervals(&self) -> Self::Iter;
-	/// Returns the cardinality of the set
-	fn card(&self) -> IntVal;
-	/// Returns whether two Ranges overlap
-	fn overlap(r1: &RangeInclusive<T>, r2: &RangeInclusive<T>) -> RangeOrdering {
-		if r1.end() < r2.start() {
-			RangeOrdering::Less
-		} else if r2.end() < r1.start() {
-			RangeOrdering::Greater
-		} else {
-			RangeOrdering::Overlap
-		}
-	}
-
-	fn intersect<Storage: FromIterator<RangeInclusive<T>>>(&self, other: &Self) -> Storage {
-		let mut lhs = self.intervals().peekable();
-		let mut rhs = other.intervals().peekable();
-		let mut ranges = Vec::new();
-		while let (Some(l), Some(r)) = (lhs.peek(), rhs.peek()) {
-			match Self::overlap(l, r) {
-				RangeOrdering::Less => {
-					lhs.next();
-				}
-				RangeOrdering::Greater => {
-					rhs.next();
-				}
-				RangeOrdering::Overlap => {
-					ranges.push(max(l.start(), r.start()).clone()..=min(l.end(), r.end()).clone());
-					if l.end() <= r.end() {
-						lhs.next();
-					} else {
-						rhs.next();
-					}
-				}
-			}
-		}
-		ranges.into_iter().collect()
-	}
-
-	fn union<Storage: FromIterator<RangeInclusive<T>>>(&self, other: &Self) -> Storage {
-		let mut lhs = self.intervals().peekable();
-		let mut rhs = other.intervals().peekable();
-		let mut ranges = Vec::new();
-		while lhs.peek().is_some() || rhs.peek().is_some() {
-			match (lhs.peek(), rhs.peek()) {
-				(Some(l), None) => {
-					ranges.push(l.clone());
-					lhs.next();
-				}
-				(None, Some(r)) => {
-					ranges.push(r.clone());
-					rhs.next();
-				}
-				(Some(l), Some(r)) => match Self::overlap(l, r) {
-					RangeOrdering::Less => {
-						ranges.push(l.clone());
-						lhs.next();
-					}
-					RangeOrdering::Greater => {
-						ranges.push(r.clone());
-						rhs.next();
-					}
-					RangeOrdering::Overlap => {
-						let mut ext =
-							min(l.start(), r.start()).clone()..=max(l.end(), r.end()).clone();
-						lhs.next();
-						rhs.next();
-						loop {
-							if let Some(l) = lhs.peek() {
-								if Self::overlap(&ext, l) == RangeOrdering::Overlap {
-									ext = ext.start().clone()..=max(ext.end(), l.end()).clone();
-									lhs.next();
-									continue;
-								}
-							}
-							if let Some(r) = rhs.peek() {
-								if Self::overlap(&ext, r) == RangeOrdering::Overlap {
-									ext = ext.start().clone()..=max(ext.end(), r.end()).clone();
-									rhs.next();
-									continue;
-								}
-							}
-							break;
-						}
-						ranges.push(ext);
-					}
-				},
-				(None, None) => unreachable!(),
-			}
-		}
-		ranges.into_iter().collect()
-	}
-
-	fn contains(&self, val: &T) -> bool {
-		// Check whether `val` falls within the set bounds
-		if !(self.lb()..=self.ub()).contains(val) {
-			return false;
-		}
-		self.intervals().any(|r| r.contains(val))
-	}
-
-	/// Returns whether `self` is a subset of `other`
-	fn subset(&self, other: &Self) -> bool {
-		let mut lhs = self.intervals().peekable();
-		let mut rhs = other.intervals().peekable();
-		while let (Some(l), Some(r)) = (lhs.peek(), rhs.peek()) {
-			match Self::overlap(l, r) {
-				RangeOrdering::Overlap if r.start() <= l.start() && l.end() <= r.end() => {
-					// Current "self range" is included in the current other range
-					// Move to next "self range" that needs to be covered
-					lhs.next();
-				}
-				RangeOrdering::Greater => {
-					// Move to next "other range"
-					rhs.next();
-				}
-				_ => {
-					// Current "self range" can no longer be covered
-					return false;
-				}
-			}
-		}
-		lhs.peek().is_none()
-	}
-
-	/// Returns whether `self` and `other` are disjoint sets
-	fn disjoint(&self, other: &Self) -> bool {
-		let mut lhs = self.intervals().peekable();
-		let mut rhs = other.intervals().peekable();
-		while let (Some(l), Some(r)) = (lhs.peek(), rhs.peek()) {
-			match Self::overlap(l, r) {
-				RangeOrdering::Less => {
-					// Move to next "self range"
-					lhs.next();
-				}
-				RangeOrdering::Overlap => return false,
-				RangeOrdering::Greater => {
-					// Move to next "other range"
-					rhs.next();
-				}
-			}
-		}
-		true
-	}
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct IntSetView<'a> {
@@ -197,8 +32,8 @@ pub struct IntSetView<'a> {
 	pub(crate) intervals: &'a [i64],
 }
 
-impl<'a> SetView<IntVal> for IntSetView<'a> {
-	type Iter = FilterMap<
+impl<'a> IntervalIterator<IntVal> for IntSetView<'a> {
+	type IntervalIter = FilterMap<
 		Tuples<
 			Chain<
 				Chain<Once<IntVal>, MapInto<Copied<std::slice::Iter<'a, i64>>, IntVal>>,
@@ -209,60 +44,51 @@ impl<'a> SetView<IntVal> for IntSetView<'a> {
 		fn((IntVal, IntVal)) -> Option<RangeInclusive<IntVal>>,
 	>;
 
-	fn lb(&self) -> IntVal {
-		if self.has_lb {
-			IntVal::Int(self.intervals[0])
-		} else {
-			IntVal::InfNeg
-		}
-	}
-
-	fn ub(&self) -> IntVal {
-		if self.has_ub {
-			IntVal::Int(self.intervals[self.intervals.len() - 1])
-		} else {
-			IntVal::InfPos
-		}
-	}
-
-	fn card(&self) -> IntVal {
-		if let (IntVal::Int(lb), IntVal::Int(ub)) = (self.lb(), self.ub()) {
-			if lb > ub {
-				0.into()
-			} else {
-				self.intervals
-					.iter()
-					.tuples()
-					.map(|(lb, ub)| ub - lb + 1)
-					.sum::<i64>()
-					.into()
-			}
-		} else {
-			IntVal::InfPos
-		}
-	}
-
-	fn intervals(&self) -> Self::Iter {
-		once(self.lb())
+	fn intervals(&self) -> Self::IntervalIter {
+		once(self.lower_bound())
 			.chain(
 				self.intervals[self.has_lb as usize..]
 					.iter()
 					.copied()
 					.map_into(),
 			)
-			.chain(once(self.ub()))
+			.chain(once(self.upper_bound()))
 			.tuples()
 			.filter_map(|(s, e)| if s <= e { Some(s..=e) } else { None })
 	}
 }
 
-impl<'a> IntSetView<'a> {
+impl IntSetView<'_> {
+	pub fn card(&self) -> IntVal {
+		// Extract finite bounds or return infinity
+		let (IntVal::Int(lb), IntVal::Int(ub)) = (self.lower_bound(), self.upper_bound()) else {
+			return IntVal::InfPos;
+		};
+		// Check whether the set is empty
+		if lb > ub {
+			return 0.into();
+		}
+		// Otherwise, compute the number of elements
+		self.intervals
+			.iter()
+			.tuples()
+			.map(|(lb, ub)| ub - lb + 1)
+			.sum::<i64>()
+			.into()
+	}
+
+	/// Returns whether the set constains a finite number of elements.
+	pub fn is_finite(&self) -> bool {
+		self.lower_bound().is_finite() && self.upper_bound().is_finite()
+	}
+
 	/// Returns an iterator over the values contained in the set if the set
 	/// contains a finite number of elements
 	pub fn values(&self) -> impl Iterator<Item = IntVal> + '_ {
-		if !(self.lb().is_finite() && self.ub().is_finite()) {
-			panic!("unable to iterate over an infinite set")
-		}
+		assert!(
+			self.is_finite(),
+			"unable to iterate over the values of an infinite set"
+		);
 		self.intervals()
 			.flat_map(|r| {
 				let IntVal::Int(a) = *r.start() else {
@@ -275,11 +101,27 @@ impl<'a> IntSetView<'a> {
 			})
 			.map(IntVal::Int)
 	}
+
+	pub fn lower_bound(&self) -> IntVal {
+		if self.has_lb {
+			IntVal::Int(self.intervals[0])
+		} else {
+			IntVal::InfNeg
+		}
+	}
+
+	pub fn upper_bound(&self) -> IntVal {
+		if self.has_ub {
+			IntVal::Int(self.intervals[self.intervals.len() - 1])
+		} else {
+			IntVal::InfPos
+		}
+	}
 }
 
-impl<'a> Display for IntSetView<'a> {
+impl Display for IntSetView<'_> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match (self.lb(), self.ub()) {
+		match (self.lower_bound(), self.upper_bound()) {
 			(IntVal::Int(lb), IntVal::Int(ub)) if lb > ub => write!(f, "∅"),
 			(IntVal::InfNeg, IntVal::InfPos) if self.intervals.is_empty() => write!(f, "int"),
 			_ => write!(
@@ -308,33 +150,20 @@ pub struct FloatSetView<'a> {
 	pub(crate) intervals: &'a [FloatVal],
 }
 
-impl<'a> SetView<FloatVal> for FloatSetView<'a> {
-	type Iter = Map<
+impl<'a> IntervalIterator<FloatVal> for FloatSetView<'a> {
+	type IntervalIter = Map<
 		Tuples<Copied<std::slice::Iter<'a, FloatVal>>, (FloatVal, FloatVal)>,
 		fn((FloatVal, FloatVal)) -> RangeInclusive<FloatVal>,
 	>;
 
-	fn lb(&self) -> FloatVal {
-		if self.intervals.is_empty() {
-			1.0.into()
-		} else {
-			self.intervals[0]
-		}
-	}
-
-	fn ub(&self) -> FloatVal {
-		if self.intervals.is_empty() {
-			0.0.into()
-		} else {
-			self.intervals[self.intervals.len() - 1]
-		}
-	}
-
-	fn intervals(&self) -> Self::Iter {
+	fn intervals(&self) -> Self::IntervalIter {
 		self.intervals.iter().copied().tuples().map(|(a, b)| a..=b)
 	}
+}
 
-	fn card(&self) -> IntVal {
+impl FloatSetView<'_> {
+	// Returns the cardinality of the set
+	pub fn card(&self) -> IntVal {
 		let mut card = 0;
 		for r in self.intervals() {
 			if !r.start().is_finite() || !r.end().is_finite() || r.start() < r.end() {
@@ -345,16 +174,25 @@ impl<'a> SetView<FloatVal> for FloatSetView<'a> {
 				card += 1;
 			}
 		}
-		IntVal::Int(card)
+		card.into()
+	}
+
+	pub fn lower_bound(&self) -> FloatVal {
+		self.intervals.first().copied().unwrap_or(1.0.into())
+	}
+
+	pub fn upper_bound(&self) -> FloatVal {
+		self.intervals.last().copied().unwrap_or(0.0.into())
 	}
 }
-impl<'a> Display for FloatSetView<'a> {
+
+impl Display for FloatSetView<'_> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		if self.lb() > self.ub() {
+		if self.lower_bound() > self.upper_bound() {
 			write!(f, "∅")
 		} else if self.intervals.len() == 2
-			&& self.lb() == f64::NEG_INFINITY.into()
-			&& self.ub() == f64::INFINITY.into()
+			&& self.lower_bound() == f64::NEG_INFINITY.into()
+			&& self.upper_bound() == f64::INFINITY.into()
 		{
 			write!(f, "float")
 		} else {
@@ -543,11 +381,12 @@ impl FromIterator<RangeInclusive<FloatVal>> for Value {
 mod tests {
 	use expect_test::expect;
 	use itertools::Itertools;
+	use rangelist::IntervalIterator;
 
 	use crate::{
 		value::{
 			num::{FloatVal, IntVal},
-			set::{SetView, FLOAT_SET_EMPTY, FLOAT_SET_INF, INT_SET_EMPTY, INT_SET_INF},
+			set::{FLOAT_SET_EMPTY, FLOAT_SET_INF, INT_SET_EMPTY, INT_SET_INF},
 			DataView,
 		},
 		Value,
@@ -627,10 +466,10 @@ mod tests {
 		let DataView::IntSet(inf) = INT_SET_INF.deref() else {
 			unreachable!()
 		};
-		assert!(empty.union::<Value>(&empty).is_constant(&INT_SET_EMPTY));
-		assert!(inf.union::<Value>(&inf).is_constant(&INT_SET_INF));
-		assert!(empty.union::<Value>(&inf).is_constant(&INT_SET_INF));
-		assert!(inf.union::<Value>(&empty).is_constant(&INT_SET_INF));
+		assert!(empty.union::<_, Value>(&empty).is_constant(&INT_SET_EMPTY));
+		assert!(inf.union::<_, Value>(&inf).is_constant(&INT_SET_INF));
+		assert!(empty.union::<_, Value>(&inf).is_constant(&INT_SET_INF));
+		assert!(inf.union::<_, Value>(&empty).is_constant(&INT_SET_INF));
 
 		let binding = Value::from_iter([IntVal::Int(1)..=5.into()]);
 		let DataView::IntSet(x) = binding.deref() else {
@@ -640,7 +479,7 @@ mod tests {
 		let DataView::IntSet(y) = binding.deref() else {
 			unreachable!()
 		};
-		let binding = x.union::<Value>(&y);
+		let binding: Value = x.union(&y);
 		let DataView::IntSet(z) = binding.deref() else {
 			unreachable!()
 		};
@@ -650,7 +489,7 @@ mod tests {
 		let DataView::IntSet(y) = binding.deref() else {
 			unreachable!()
 		};
-		let binding = x.union::<Value>(&y);
+		let binding: Value = x.union(&y);
 		let DataView::IntSet(z) = binding.deref() else {
 			unreachable!()
 		};
@@ -660,13 +499,13 @@ mod tests {
 		let DataView::IntSet(y) = binding.deref() else {
 			unreachable!()
 		};
-		let binding = x.union::<Value>(&y);
+		let binding: Value = x.union(&y);
 		let DataView::IntSet(z) = binding.deref() else {
 			unreachable!()
 		};
 		expect!["-5..-1 ∪ 1..9"].assert_eq(&z.to_string());
 
-		let binding = y.union::<Value>(&x);
+		let binding: Value = y.union(&x);
 		let DataView::IntSet(z) = binding.deref() else {
 			unreachable!()
 		};
@@ -684,12 +523,12 @@ mod tests {
 		let DataView::IntSet(y) = binding.deref() else {
 			unreachable!()
 		};
-		let binding = y.union::<Value>(&x);
+		let binding: Value = y.union(&x);
 		let DataView::IntSet(z) = binding.deref() else {
 			unreachable!()
 		};
 		expect!["1..9"].assert_eq(&z.to_string());
-		let binding = x.union::<Value>(&y);
+		let binding: Value = x.union(&y);
 		let DataView::IntSet(z) = binding.deref() else {
 			unreachable!()
 		};
@@ -703,7 +542,7 @@ mod tests {
 		let DataView::FloatSet(y) = binding.deref() else {
 			unreachable!()
 		};
-		let binding = x.union::<Value>(&y);
+		let binding: Value = x.union(&y);
 		let DataView::FloatSet(z) = binding.deref() else {
 			unreachable!()
 		};
@@ -718,10 +557,16 @@ mod tests {
 		let DataView::IntSet(inf) = INT_SET_INF.deref() else {
 			unreachable!()
 		};
-		assert!(empty.intersect::<Value>(&empty).is_constant(&INT_SET_EMPTY));
-		assert!(inf.intersect::<Value>(&inf).is_constant(&INT_SET_INF));
-		assert!(empty.intersect::<Value>(&inf).is_constant(&INT_SET_EMPTY));
-		assert!(inf.intersect::<Value>(&empty).is_constant(&INT_SET_EMPTY));
+		assert!(empty
+			.intersect::<_, Value>(&empty)
+			.is_constant(&INT_SET_EMPTY));
+		assert!(inf.intersect::<_, Value>(&inf).is_constant(&INT_SET_INF));
+		assert!(empty
+			.intersect::<_, Value>(&inf)
+			.is_constant(&INT_SET_EMPTY));
+		assert!(inf
+			.intersect::<_, Value>(&empty)
+			.is_constant(&INT_SET_EMPTY));
 
 		let binding = Value::from_iter([IntVal::Int(1)..=5.into()]);
 		let DataView::IntSet(x) = binding.deref() else {
@@ -731,7 +576,7 @@ mod tests {
 		let DataView::IntSet(y) = binding.deref() else {
 			unreachable!()
 		};
-		let binding = x.intersect::<Value>(&y);
+		let binding: Value = x.intersect(&y);
 		let DataView::IntSet(z) = binding.deref() else {
 			unreachable!()
 		};
@@ -741,12 +586,12 @@ mod tests {
 		let DataView::IntSet(y) = binding.deref() else {
 			unreachable!()
 		};
-		let binding = x.intersect::<Value>(&y);
+		let binding: Value = x.intersect(&y);
 		let DataView::IntSet(z) = binding.deref() else {
 			unreachable!()
 		};
 		expect!["1..2 ∪ 4..5"].assert_eq(&z.to_string());
-		let binding = y.intersect::<Value>(&x);
+		let binding: Value = y.intersect(&x);
 		let DataView::IntSet(z) = binding.deref() else {
 			unreachable!()
 		};
@@ -756,12 +601,12 @@ mod tests {
 		let DataView::IntSet(y) = binding.deref() else {
 			unreachable!()
 		};
-		let binding = x.intersect::<Value>(&y);
+		let binding: Value = x.intersect(&y);
 		let DataView::IntSet(z) = binding.deref() else {
 			unreachable!()
 		};
 		expect!["1..3"].assert_eq(&z.to_string());
-		let binding = y.intersect::<Value>(&x);
+		let binding: Value = y.intersect(&x);
 		let DataView::IntSet(z) = binding.deref() else {
 			unreachable!()
 		};
@@ -775,7 +620,7 @@ mod tests {
 		let DataView::FloatSet(y) = binding.deref() else {
 			unreachable!()
 		};
-		let binding = x.intersect::<Value>(&y);
+		let binding: Value = x.intersect(&y);
 		let DataView::FloatSet(z) = binding.deref() else {
 			unreachable!()
 		};
@@ -906,7 +751,7 @@ mod tests {
 	}
 
 	#[test]
-	#[should_panic(expected = "unable to iterate over an infinite set")]
+	#[should_panic(expected = "unable to iterate over the values of an infinite set")]
 	fn test_int_set_values() {
 		let DataView::IntSet(inf) = INT_SET_INF.deref() else {
 			unreachable!()

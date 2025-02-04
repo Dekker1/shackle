@@ -6,7 +6,7 @@ use crate::{
 #[derive(Debug)]
 pub struct IntVar {
 	ident: u64,
-	domain: Option<Value>,
+	_domain: Option<Value>,
 	alias: Option<Value>,
 }
 

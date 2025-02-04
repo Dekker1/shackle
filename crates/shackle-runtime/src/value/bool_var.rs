@@ -6,7 +6,7 @@ use crate::{
 #[derive(Debug)]
 pub struct BoolVar {
 	ident: u64,
-	domain: Option<bool>,
+	_domain: Option<bool>,
 	alias: Option<Value>,
 }
 

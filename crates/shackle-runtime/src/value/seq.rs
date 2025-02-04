@@ -102,7 +102,7 @@ pub enum SeqView<'a> {
 	},
 }
 
-impl<'a> SeqView<'a> {
+impl SeqView<'_> {
 	pub const fn dims(&self) -> usize {
 		match self {
 			SeqView::Direct(_) => 1,
@@ -305,7 +305,7 @@ impl<'a, T> Pairs<'a, T> {
 	}
 }
 
-impl<'a, T> Index<usize> for Pairs<'a, T> {
+impl<T> Index<usize> for Pairs<'_, T> {
 	type Output = [T];
 
 	fn index(&self, index: usize) -> &Self::Output {

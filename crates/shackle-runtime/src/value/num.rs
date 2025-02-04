@@ -68,6 +68,7 @@ const ERROR_INF: &str = "arithmetic operation on infinite value";
 const ERROR_INT_OF: &str = "integer overflow";
 impl Add for IntVal {
 	type Output = Result<IntVal, ArithmeticError>;
+
 	fn add(self, rhs: Self) -> Self::Output {
 		let (IntVal::Int(x), IntVal::Int(y)) = (self, rhs) else {
 			return Err(ArithmeticError { reason: ERROR_INF });
@@ -82,6 +83,7 @@ impl Add for IntVal {
 }
 impl Sub for IntVal {
 	type Output = Result<IntVal, ArithmeticError>;
+
 	fn sub(self, rhs: Self) -> Self::Output {
 		let (IntVal::Int(x), IntVal::Int(y)) = (self, rhs) else {
 			return Err(ArithmeticError { reason: ERROR_INF });
@@ -96,6 +98,7 @@ impl Sub for IntVal {
 }
 impl Mul for IntVal {
 	type Output = Result<IntVal, ArithmeticError>;
+
 	fn mul(self, rhs: Self) -> Self::Output {
 		let (IntVal::Int(x), IntVal::Int(y)) = (self, rhs) else {
 			return Err(ArithmeticError { reason: ERROR_INF });
@@ -110,6 +113,7 @@ impl Mul for IntVal {
 }
 impl Div for IntVal {
 	type Output = Result<IntVal, ArithmeticError>;
+
 	fn div(self, rhs: Self) -> Self::Output {
 		let (IntVal::Int(x), IntVal::Int(y)) = (self, rhs) else {
 			return Err(ArithmeticError { reason: ERROR_INF });
@@ -124,6 +128,7 @@ impl Div for IntVal {
 }
 impl Rem for IntVal {
 	type Output = Result<IntVal, ArithmeticError>;
+
 	fn rem(self, rhs: Self) -> Self::Output {
 		let (IntVal::Int(x), IntVal::Int(y)) = (self, rhs) else {
 			return Err(ArithmeticError { reason: ERROR_INF });
@@ -177,6 +182,7 @@ pub struct FloatVal(f64);
 impl FloatVal {
 	pub const INFINITY: FloatVal = FloatVal(f64::INFINITY);
 	pub const NEG_INFINITY: FloatVal = FloatVal(f64::NEG_INFINITY);
+
 	pub fn is_finite(&self) -> bool {
 		self.0.is_finite()
 	}
@@ -208,6 +214,7 @@ impl Display for FloatVal {
 
 impl Add for FloatVal {
 	type Output = Result<FloatVal, ArithmeticError>;
+
 	fn add(self, rhs: Self) -> Self::Output {
 		if !(self.0.is_finite() && rhs.0.is_finite()) {
 			return Err(ArithmeticError { reason: ERROR_INF });
@@ -223,6 +230,7 @@ impl Add for FloatVal {
 }
 impl Sub for FloatVal {
 	type Output = Result<FloatVal, ArithmeticError>;
+
 	fn sub(self, rhs: Self) -> Self::Output {
 		if !(self.0.is_finite() && rhs.0.is_finite()) {
 			return Err(ArithmeticError { reason: ERROR_INF });
@@ -238,6 +246,7 @@ impl Sub for FloatVal {
 }
 impl Mul for FloatVal {
 	type Output = Result<FloatVal, ArithmeticError>;
+
 	fn mul(self, rhs: Self) -> Self::Output {
 		if !(self.0.is_finite() && rhs.0.is_finite()) {
 			return Err(ArithmeticError { reason: ERROR_INF });
@@ -253,6 +262,7 @@ impl Mul for FloatVal {
 }
 impl Div for FloatVal {
 	type Output = Result<FloatVal, ArithmeticError>;
+
 	fn div(self, rhs: Self) -> Self::Output {
 		if !(self.0.is_finite() && rhs.0.is_finite()) {
 			return Err(ArithmeticError { reason: ERROR_INF });
@@ -268,6 +278,7 @@ impl Div for FloatVal {
 }
 impl Rem for FloatVal {
 	type Output = Result<FloatVal, ArithmeticError>;
+
 	fn rem(self, rhs: Self) -> Self::Output {
 		if !(self.0.is_finite() && rhs.0.is_finite()) {
 			return Err(ArithmeticError { reason: ERROR_INF });
@@ -356,7 +367,7 @@ impl Value {
 		})
 	}
 
-	fn as_int(&self) -> IntVal {
+	pub fn as_int(&self) -> IntVal {
 		let DataView::Int(i) = self.deref() else {
 			panic!("expected int, found {self:?}");
 		};
@@ -404,6 +415,7 @@ impl TryInto<bool> for &Value {
 }
 impl TryInto<bool> for Value {
 	type Error = ();
+
 	fn try_into(self) -> Result<bool, Self::Error> {
 		(&self).try_into()
 	}
@@ -436,6 +448,7 @@ impl From<IntVal> for Value {
 }
 impl TryInto<IntVal> for &Value {
 	type Error = ();
+
 	fn try_into(self) -> Result<IntVal, Self::Error> {
 		if let DataView::Int(i) = self.deref() {
 			Ok(i)
@@ -446,12 +459,14 @@ impl TryInto<IntVal> for &Value {
 }
 impl TryInto<IntVal> for Value {
 	type Error = ();
+
 	fn try_into(self) -> Result<IntVal, Self::Error> {
 		(&self).try_into()
 	}
 }
 impl TryInto<i64> for &Value {
 	type Error = ();
+
 	fn try_into(self) -> Result<i64, Self::Error> {
 		if let IntVal::Int(i) = self.try_into()? {
 			Ok(i)
@@ -462,6 +477,7 @@ impl TryInto<i64> for &Value {
 }
 impl TryInto<i64> for Value {
 	type Error = ();
+
 	fn try_into(self) -> Result<i64, Self::Error> {
 		(&self).try_into()
 	}
@@ -511,6 +527,7 @@ impl From<f64> for Value {
 }
 impl TryInto<FloatVal> for &Value {
 	type Error = ();
+
 	fn try_into(self) -> Result<FloatVal, Self::Error> {
 		if let DataView::Float(f) = self.deref() {
 			Ok(f)
@@ -521,6 +538,7 @@ impl TryInto<FloatVal> for &Value {
 }
 impl TryInto<FloatVal> for Value {
 	type Error = ();
+
 	fn try_into(self) -> Result<FloatVal, Self::Error> {
 		(&self).try_into()
 	}
@@ -535,6 +553,7 @@ impl TryInto<f64> for &Value {
 }
 impl TryInto<f64> for Value {
 	type Error = ();
+
 	fn try_into(self) -> Result<f64, Self::Error> {
 		(&self).try_into()
 	}
@@ -553,9 +572,9 @@ mod tests {
 	#[test]
 	fn test_bool_value() {
 		let f: bool = Value::from(false).try_into().unwrap();
-		assert_eq!(f, false);
+		assert!(!f);
 		let t: bool = Value::from(true).try_into().unwrap();
-		assert_eq!(t, true);
+		assert!(t);
 	}
 
 	#[test]

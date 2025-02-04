@@ -11,6 +11,7 @@ bilge = "0.2.0"
 itertools = "0.12.0"
 miette = "5.9.0"
 once_cell = "1.18.0"
+rangelist = { path = "../rangelist" }
 shackle-compiler = { path = "../shackle-compiler" }
 thiserror = "1.0.40"
 varlen = { version = "0.1.2", features = ["macro"] }

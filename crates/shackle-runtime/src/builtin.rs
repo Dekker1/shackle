@@ -1,7 +1,6 @@
-use crate::{
-	value::{DataView, SetView},
-	Value,
-};
+use rangelist::IntervalIterator;
+
+use crate::{value::DataView, Value};
 
 pub fn int_set_union(a: Value, b: Value) -> Value {
 	let DataView::IntSet(x) = a.deref() else {
