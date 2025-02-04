@@ -18,6 +18,3 @@ varlen = { version = "0.1.2", features = ["macro"] }
 
 [dev-dependencies]
 expect-test = "1.4.1"
-
-[features]
-single-threaded = []
