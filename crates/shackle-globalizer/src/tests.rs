@@ -881,6 +881,26 @@ fn solve_leaders_never_give_true() {
 }
 
 #[test]
+fn solve_locations_are_not_repeated() {
+	// The parts are `a != c`, the argument `a != d` and `c != d`: the call,
+	// the argument and the call again
+	let src = r#"
+		var 1..3: a;
+		var 1..3: c;
+		var 1..3: d;
+		predicate p(var bool: b) = a != c /\ b /\ c != d;
+		constraint p(a != d);
+	"#;
+	let result = globalize(src, &[], &options(3, &["all_different"]));
+	for f in &result.findings {
+		let locations = f.locations.iter().map(ToString::to_string).collect::<Vec<_>>();
+		let unique = locations.iter().unique().count();
+		assert_eq!(unique, locations.len(), "{locations:?}");
+	}
+	assert!(!result.findings.is_empty());
+}
+
+#[test]
 fn solve_mutually_redundant_constraints_are_not_both_removed() {
 	// Each copy is redundant given the other, but not both at once
 	let src = "var 1..3: x;\nvar 1..3: y;\nconstraint x < y;\nconstraint x < y;";
