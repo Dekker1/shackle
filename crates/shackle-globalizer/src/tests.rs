@@ -32,7 +32,7 @@ use shackle_hir::run_hir_phase;
 use shackle_syntax::InputLang;
 
 use super::{
-	candidates::Candidate,
+	candidates::{Blank, Candidate},
 	groups::{Unrolled, Variant},
 	*,
 };
@@ -1117,6 +1117,32 @@ fn solve_test_templates_match_the_globals() {
 		assert!(!expected.is_empty(), "{global}");
 		assert_eq!(all(test), expected, "{test} differs from {global}");
 	}
+}
+
+#[test]
+fn solve_undefined_feature_keeps_the_samples() {
+	// `max(x)` of the empty `x` is undefined, which makes the run
+	// unsatisfiable: the instance still has samples for the other candidate
+	let src = r#"
+		int: n = 0;
+		array[1..n] of var 1..3: x;
+		var 1..3: z;
+		constraint forall(i in 1..n)(x[i] <= z);
+	"#;
+	let kept = with(src, |g| {
+		no_unrolling(g, &[0], |u| {
+			let (preamble, search) = submodel(g, u);
+			let base = format!("{preamble}constraint {};\n", g.print_part(&g.parts[0]));
+			let mut maximum = Candidate::raw("maximum", &["0", "x"]);
+			maximum.blank = Some((0, Blank::Max(1)));
+			let cands = vec![Candidate::raw("all_different", &["x"]), maximum];
+			g.checker
+				.check_candidates(&base, &search, &None, cands)
+				.unwrap()
+		})
+	});
+	let kept = kept.expect("the instance has samples");
+	assert!(kept.contains(&Candidate::raw("all_different", &["x"])), "{kept:?}");
 }
 
 #[test]
