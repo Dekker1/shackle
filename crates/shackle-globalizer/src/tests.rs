@@ -267,6 +267,19 @@ fn no_unrolling<R>(
 }
 
 #[test]
+fn normalise_inlines_nested_calls_of_the_same_function() {
+	// The inner `f(x)` is an argument of the outer call, not a recursive call
+	let src = r#"
+		function var int: f(var int: a) = a + 1;
+		var 1..5: x;
+		var 1..5: y;
+		constraint f(f(x)) <= y;
+	"#;
+	let printed = with(src, |g| g.print_part(&g.parts[0]));
+	assert!(!printed.contains("f("), "{printed}");
+}
+
+#[test]
 fn normalise_inlines_user_predicates() {
 	check_parts(
 		r#"
