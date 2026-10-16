@@ -810,6 +810,15 @@ fn solve_initial_pass_finds_viewpoints() {
 }
 
 #[test]
+fn solve_inlining_keeps_parameter_domains() {
+	// `valid(y)` restricts `y` to 1..3 through the parameter's domain, so
+	// it is not redundant even though its body is
+	let src = "predicate valid(var 1..3: x) = x >= 1;\nvar 1..9: y;\nconstraint valid(y);";
+	let found = replacements(globalize(src, &[], &initial(1, &[])));
+	assert!(!found.contains(&"true".to_owned()), "{found:?}");
+}
+
+#[test]
 fn solve_leaders_never_give_true() {
 	// For i = 1 and j = 8 the diagonal is rarely violated on samples
 	let src = "int: n = 8;\narray[1..n] of var 1..n: q;\nconstraint forall(i, j in 1..n where i < j)(q[i] + i != q[j] + j);";
