@@ -827,6 +827,15 @@ fn solve_leaders_never_give_true() {
 }
 
 #[test]
+fn solve_mutually_redundant_constraints_are_not_both_removed() {
+	// Each copy is redundant given the other, but not both at once
+	let src = "var 1..3: x;\nvar 1..3: y;\nconstraint x < y;\nconstraint x < y;";
+	let found = replacements(globalize(src, &[], &initial(1, &[])));
+	let redundant = found.iter().filter(|f| *f == "true").count();
+	assert!(redundant <= 1, "{found:?}");
+}
+
+#[test]
 fn solve_other_names_of_the_same_global_are_not_suggested() {
 	let except_0 = "include \"all_different.mzn\";\narray[1..4] of var 0..4: x;\nconstraint all_different(x, {0});";
 	assert_eq!(solve(except_0, 1, &["all"]), Vec::<String>::new());
