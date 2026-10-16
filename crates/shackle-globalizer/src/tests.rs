@@ -746,6 +746,25 @@ fn solve_count_leq_bound_is_not_tightened() {
 }
 
 #[test]
+fn solve_empty_leader_set_is_skipped() {
+	// For `i = n` the set of `j` is empty: that instantiation has no
+	// samples, so it must not fail the reverse check
+	let src = r#"
+		int: n = 3;
+		int: m = 3;
+		array[1..n, 1..n, 1..m] of var 1..m: y;
+		constraint forall(i in 1..n, j in i+1..n, k in 1..m, l in k+1..m)(y[i, j, k] != y[i, j, l]);
+	"#;
+	let found = solve(src, 1, &["all_different"]);
+	assert!(
+		found
+			.iter()
+			.any(|f| f.contains("all_different(y[i, j, ..])")),
+		"{found:?}"
+	);
+}
+
+#[test]
 fn solve_existing_global_is_vacuous() {
 	let src =
 		"include \"all_different.mzn\";\narray[1..4] of var 1..5: x;\nconstraint all_different(x);";
