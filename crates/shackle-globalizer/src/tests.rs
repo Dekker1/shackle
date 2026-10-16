@@ -1305,6 +1305,18 @@ fn unrolled_parts_and_leaders() {
 }
 
 #[test]
+fn variants_do_not_fix_var_set_loops() {
+	// A leader over `s` would be a variable, but leaders must be par
+	let src = r#"
+		var set of 1..3: s;
+		array[1..3, 1..3] of var 1..3: x;
+		constraint forall(i in s)(x[i, 1] != x[i, 2]);
+	"#;
+	let variants = with(src, |g| printed_variants(g, &[0]));
+	assert_eq!(variants, ["[]"]);
+}
+
+#[test]
 fn variants_fix_subsets_of_set_loops() {
 	let src = r#"
 		int: n = 3;
