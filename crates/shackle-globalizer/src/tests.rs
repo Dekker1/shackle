@@ -918,6 +918,15 @@ fn solve_other_names_of_the_same_global_are_not_suggested() {
 }
 
 #[test]
+fn solve_rarely_violated_constraint_is_not_redundant() {
+	// Only the assignment with all 30 values true violates it, which the
+	// samples without the constraint do not reach
+	let src = "array[1..30] of var bool: b;\nconstraint sum(i in 1..30)(bool2int(b[i])) <= 29;";
+	let found = replacements(globalize(src, &[], &initial(1, &[])));
+	assert!(!found.contains(&"true".to_owned()), "{found:?}");
+}
+
+#[test]
 fn solve_redundant_group_is_left_out_of_the_full_pass() {
 	// `x[1] >= 1` is redundant, so it is not grouped alone in the full pass
 	let src = "array[1..3] of var 1..3: x;\nconstraint x[1] >= 1;\nconstraint forall(i, j in 1..3 where i < j)(x[i] != x[j]);";
