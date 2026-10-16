@@ -724,6 +724,28 @@ fn solve_context_is_reported() {
 }
 
 #[test]
+fn solve_count_leq_bound_is_not_tightened() {
+	// The group allows up to 29 true values (`b[1]` would make all 30
+	// true), but the samples of the group rarely have more than 19: a bound
+	// from the largest count seen is stronger than the group, which the
+	// reverse check cannot notice. This depends on the samples: a change to
+	// sampling can make it pass while `Candidate::fill` still uses the
+	// largest count seen.
+	let src = r#"
+		array[1..30] of var bool: b;
+		constraint b[1] -> forall(i in 2..30)(b[i]);
+		constraint sum(i in 1..30)(bool2int(b[i])) <= 29;
+	"#;
+	let found = solve(src, 2, &["count"]);
+	let too_strong = found.iter().filter(|f| {
+		f.rsplit_once("<= ")
+			.and_then(|(_, k)| k.parse::<i64>().ok())
+			.is_some_and(|k| k < 29)
+	});
+	assert_eq!(too_strong.count(), 0, "{found:?}");
+}
+
+#[test]
 fn solve_existing_global_is_vacuous() {
 	let src =
 		"include \"all_different.mzn\";\narray[1..4] of var 1..5: x;\nconstraint all_different(x);";
